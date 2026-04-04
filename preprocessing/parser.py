@@ -56,17 +56,10 @@ JOB_HINTS = [
 
 
 def clean_lines(text: str) -> list:
-    """
-    Split text into non-empty stripped lines.
-    """
     return [line.strip() for line in text.splitlines() if line.strip()]
 
 
 def split_sections(text: str) -> dict:
-    """
-    Detect common CV sections using simple heading-based matching.
-    Returns a dictionary of section_name -> section_text.
-    """
     lower_text = text.lower()
     found_positions = {}
 
@@ -88,9 +81,6 @@ def split_sections(text: str) -> dict:
 
 
 def extract_personal_information(text: str) -> dict:
-    """
-    Extract very basic personal information from the CV text.
-    """
     lines = clean_lines(text)
     name = lines[0] if lines else "Unknown Candidate"
 
@@ -105,19 +95,12 @@ def extract_personal_information(text: str) -> dict:
 
 
 def extract_skills(text: str) -> list:
-    """
-    Detect a small set of common skills from the CV text using keyword matching.
-    """
     lower_text = text.lower()
     found_skills = [skill.title() for skill in SKILL_KEYWORDS if skill in lower_text]
     return sorted(set(found_skills))
 
 
 def extract_education(section_text: str) -> list:
-    """
-    Baseline education extraction using line-level heuristics.
-    Returns a list of simple education records.
-    """
     education_records = []
     lines = clean_lines(section_text)
 
@@ -125,7 +108,6 @@ def extract_education(section_text: str) -> list:
         lower_line = line.lower()
 
         if any(keyword in lower_line for keyword in DEGREE_KEYWORDS):
-            years = YEAR_RE.findall(line)
             cgpa_match = CGPA_RE.search(line)
 
             record = {
@@ -139,10 +121,6 @@ def extract_education(section_text: str) -> list:
 
 
 def extract_experience(section_text: str) -> list:
-    """
-    Baseline experience extraction using line-level heuristics.
-    Returns a list of simple job/experience records.
-    """
     experience_records = []
     lines = clean_lines(section_text)
 
@@ -157,3 +135,22 @@ def extract_experience(section_text: str) -> list:
             experience_records.append(record)
 
     return experience_records
+
+
+def parse_candidate_profile(text: str) -> dict:
+    """
+    Combine all extraction steps into a structured candidate profile.
+    """
+    personal_info = extract_personal_information(text)
+    sections = split_sections(text)
+
+    education = extract_education(sections.get("education", ""))
+    experience = extract_experience(sections.get("experience", ""))
+    skills = extract_skills(text)
+
+    return {
+        "personal_information": personal_info,
+        "education": education,
+        "experience": experience,
+        "skills": skills,
+    }
