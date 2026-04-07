@@ -1,0 +1,91 @@
+{
+  "personal_information": {
+    "name": "Muhammad Salman",
+    "email": "anwar.ce@must.edu.pk",
+    "phone": "10 84 5463"
+  },
+  "education": [
+    {
+      "degree": "PhD in Electrical Engineering Communication Systems 3.33 202",
+      "grade": "3.33 ",
+      "year": "20",
+      "institution": "Islamic university, Islamabad"
+    },
+    {
+      "degree": "MS in Electrical Engineering Communication Systems 3.03 2014",
+      "grade": "3.03 ",
+      "year": "20",
+      "institution": "Islamabad, Attock Campus"
+    },
+    {
+      "degree": "BSc Electronics Engineering Electronics 69.84 2011 COMSATS U",
+      "grade": "69.84 ",
+      "year": "20",
+      "institution": "Islamabad, Abbottabad Campus"
+    },
+    {
+      "degree": "HSSC Pre-Engineering 65.45 2006 B.I.S.E Bannu",
+      "grade": "65.45 ",
+      "year": "20",
+      "institution": "2006 B.I.S.E Bannu"
+    },
+    {
+      "degree": "SSc Science Subjects 71 2004 B.I.S.E Bannu",
+      "grade": "71 ",
+      "year": "20",
+      "institution": "2004 B.I.S.E Bannu"
+    }
+  ],
+  "experience": [
+    {
+      "raw": "Program Coordinator Qurtuba University, D.I.Khan DERA ISMAIL KHAN Sep-2017 - Aug-2023",
+      "years": [
+        "20",
+        "20"
+      ]
+    },
+    {
+      "raw": "Support Engineer Al-Rehman enterprises, Islamabad Islamabad, Pakistan Jan-2012 - Aug-2015",
+      "years": [
+        "20",
+        "20"
+      ]
+    },
+    {
+      "raw": "Lecturer Qurtuba University, D.I.Khan D.I.Khan (KPK), Pakistan Aug-2015 - Mar-2018",
+      "years": [
+        "20",
+        "20"
+      ]
+    },
+    {
+      "raw": "Assistant Professor Qurtuba University, D.I.Khan D.I.Khan (KPK), Pakistan Mar-2018 - Aug-2023",
+      "years": [
+        "20",
+        "20"
+      ]
+    },
+    {
+      "raw": "Associate Professor Xi'an International University, China Shaanxi, China Jan-2025 - Present",
+      "years": [
+        "20"
+      ]
+    }
+  ],
+  "skills": [
+    "Deep Learning",
+    "Research"
+  ],
+  "publications": [
+    {
+      "title": "A Hybrid Framework Muhammad Salman Qamar Muhammad Fahad International Journal 3 2.10 84 5463- Jul-"
+    },
+    {
+      "title": "Integrating Deterministic Munir 5485 2025"
+    },
+    {
+      "title": "AI for Cleaner Air: Muhammad Salman Qamar Muhammad Fahad International Journal 3 2.50 144 3557- Sep-"
+    }
+  ],
+  "missing_information": []
+}

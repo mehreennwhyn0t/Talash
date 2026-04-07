@@ -1,0 +1,85 @@
+{
+  "personal_information": {
+    "name": "Aamina Akbar",
+    "email": "dr.shaheen@fui.edu.pk",
+    "phone": "5147939 2"
+  },
+  "education": [
+    {
+      "degree": "PhD Electrical (Communication) Wireless Communication",
+      "grade": "3.83 ",
+      "year": "20",
+      "institution": "of Space Technology"
+    },
+    {
+      "degree": "MS Electrical (Telecom) Telecommunication 3.90 2013 Center f",
+      "grade": "3.90 ",
+      "year": "20",
+      "institution": "Advanced Studies in"
+    },
+    {
+      "degree": "BE Electrical(Telecom) Telecommunication 2.63 2010 NUST",
+      "grade": "2.63 ",
+      "year": "20",
+      "institution": "2.63 2010 NUST"
+    },
+    {
+      "degree": "HSSC Pre-Engineering 76% 2006 Federal Board",
+      "grade": "76",
+      "year": "20",
+      "institution": "2006 Federal Board"
+    },
+    {
+      "degree": "SSC Science 88% 2004 Federal Board",
+      "grade": "88",
+      "year": "20",
+      "institution": "2004 Federal Board"
+    },
+    {
+      "degree": "PhD studies.",
+      "grade": "",
+      "year": "",
+      "institution": "for PhD studies."
+    }
+  ],
+  "experience": [
+    {
+      "raw": "Lecturer Foundation University Rawalpindi Campus RAWALPINDI Feb-2014 - Sep-2024",
+      "years": [
+        "20",
+        "20"
+      ]
+    },
+    {
+      "raw": "Membership Pakistan Engineering Council Number-ELECT/32735",
+      "years": []
+    },
+    {
+      "raw": "Merit Scholarships Merit scholarship in MS Electrical(Telecom) Engineering by Center for Advanced Studies in Engineering",
+      "years": []
+    },
+    {
+      "raw": "Dr. M. Shaheen Reference Dean & Professor at Foundation Foundation University School of 03175634789 dr.shaheen@fui.edu.p",
+      "years": []
+    },
+    {
+      "raw": "Dr. Adnan Zafar Reference HoD Electrical Engineering Institute of Space Technology 03414965030 adnan.zafar@ist.edu.pk",
+      "years": []
+    }
+  ],
+  "skills": [
+    "Research"
+  ],
+  "publications": [
+    {
+      "title": "Joint Backhaul Pairing and Myra Khalid Aamina Akbar, International 0.00 0 1-6 Nov-"
+    },
+    {
+      "title": "Resource Allocation of Hassaan Khaliq Conference 2023"
+    },
+    {
+      "title": "Ga-Optimized Jt-Comp F- Aamina Akbar Ashfaq Ahmed, Journal 5147939 2.20 72 102715 Oct-"
+    }
+  ],
+  "missing_information": []
+}

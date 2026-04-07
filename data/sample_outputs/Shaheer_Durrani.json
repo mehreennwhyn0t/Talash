@@ -1,0 +1,83 @@
+{
+  "personal_information": {
+    "name": "Shaheer",
+    "email": "registrar@cusit.edu.pk",
+    "phone": "+60 19-424 1881"
+  },
+  "education": [
+    {
+      "degree": "PhD POWER ELECTRONICS 4 2021 University Malaysia Pahang",
+      "grade": "4 ",
+      "year": "20",
+      "institution": "University Malaysia Pahang"
+    },
+    {
+      "degree": "Masters of electrical control systems 4 2006 Hogskolan Dalar",
+      "grade": "4 ",
+      "year": "20",
+      "institution": "2006 Hogskolan Dalarna"
+    },
+    {
+      "degree": "Bachelor of electrical electrical engineering 67 2003 Univer",
+      "grade": "67 ",
+      "year": "20",
+      "institution": "engineering and technology,Peshawar"
+    },
+    {
+      "degree": "Fsc pre engineering 61 1996 federal board of intermediate n",
+      "grade": "61 ",
+      "year": "19",
+      "institution": "n secondary education"
+    },
+    {
+      "degree": "Matric science 68 1994 federal board of intermediate n secon",
+      "grade": "68 ",
+      "year": "19",
+      "institution": "n secondary education"
+    }
+  ],
+  "experience": [
+    {
+      "raw": "assistant professor city university Peshawar May-2021 - Present",
+      "years": [
+        "20"
+      ]
+    },
+    {
+      "raw": "Research Engineer khyber lamps pekan Jul-2003 - Aug-2005",
+      "years": [
+        "20",
+        "20"
+      ]
+    },
+    {
+      "raw": "Assistant Professor uet peshawar peshawar Jan-2007 - Sep-2008",
+      "years": [
+        "20",
+        "20"
+      ]
+    },
+    {
+      "raw": "Teaching Assistant ump pekan, malaysia pekan Apr-2016 - Apr-2021",
+      "years": [
+        "20",
+        "20"
+      ]
+    },
+    {
+      "raw": "asst professor cecos university peshawar peshawar Sep-2007 - Aug-2012",
+      "years": [
+        "20",
+        "20"
+      ]
+    }
+  ],
+  "skills": [
+    "Research",
+    "Teaching",
+    "Power Electronics",
+    "Control Systems"
+  ],
+  "publications": [],
+  "missing_information": []
+}
