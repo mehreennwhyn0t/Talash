@@ -1,35 +1,139 @@
-# TALASH - Smart HR Recruitment System
+# TALASH – Smart CV Analyzer
 
-TALASH (Talent Acquisition & Learning Automation for Smart Hiring) is being developed for **CS417 - Large Language Models**.
+## Project Overview
 
-## Milestone 1 Goal
-The goal of Milestone 1 is to build the initial preprocessing pipeline for converting CV PDFs into structured candidate data.
+TALASH is a CV analysis system that extracts structured information from PDF resumes.
+It processes raw CV text and converts it into a structured JSON format for analysis.
 
-## Current Progress
-This repository currently includes the initial project structure and baseline preprocessing setup:
-- repository structure initialized
-- PDF text extraction baseline added
-- initial parsing helpers added
-- folders prepared for app, docs, report, slides, and sample data
+The system demonstrates:
 
-## Planned Milestone 1 Scope
-- CV PDF reading
-- basic section detection
-- extraction of candidate information from CV text
-- structured output for downstream modules
-- early prototype for upload/read flow
-- architecture, wireframes, and documentation
+* PDF text extraction
+* Information parsing
+* JSON generation
+* Interactive UI using Streamlit
+
+---
+
+## Features
+
+* Upload CV (PDF)
+* Load sample CV from folder
+* Extract:
+
+  * Personal Information
+  * Skills
+  * Education
+  * Experience
+  * Publications
+* Detect missing information
+* View raw extracted text
+* Generate structured JSON output
+
+---
 
 ## Project Structure
-- `preprocessing/` - PDF reading and parsing logic
-- `app/` - Streamlit prototype
-- `data/` - input CVs and parsed outputs
-- `docs/` - architecture, wireframes, and design notes
-- `report/` - milestone report
-- `slides/` - presentation deck
 
-## Setup
-Install dependencies using:
+```
+Talash/
+│
+├── app/
+│   └── streamlit_app.py
+│
+├── preprocessing/
+│   ├── pdf_reader.py
+│   └── parser.py
+│
+├── data/
+│   ├── input_cvs/
+│   └── sample_outputs/
+│
+├── docs/
+│   ├── architecture_diagram.png
+│   ├── data_flow_diagram.png
+│   ├── wireframe_upload.png
+│   ├── wireframe_dashboard.png
+│   ├── wireframe_results.png
+│   └── screenshots/
+│
+├── requirements.txt
+└── README.md
+```
 
-```bash
+---
+
+## How to Run
+
+### Install dependencies
+
+```
 pip install -r requirements.txt
+```
+
+### Run the application
+
+```
+streamlit run app/streamlit_app.py
+```
+
+### Open in browser
+
+```
+http://localhost:8501
+```
+
+---
+
+## System Workflow
+
+1. User uploads or selects a CV
+2. PDF text is extracted
+3. Parser processes the text
+4. Structured JSON is generated
+5. Missing fields are flagged
+6. Results are displayed in the UI
+
+---
+
+## Technologies Used
+
+* Python
+* Streamlit
+* PDF processing libraries
+* Regular expressions
+* JSON handling
+
+---
+
+## Limitations
+
+* Works best with structured CVs
+* Some fields may not be detected if formatting is inconsistent
+* Publications extraction depends on CV format
+
+---
+
+## Future Improvements
+
+* NLP-based parsing
+* Improved publications extraction
+* CV scoring system
+* Job matching functionality
+* Deployment as a web application
+
+---
+
+## Milestone 1 Status
+
+* UI prototype completed
+* CV upload and folder input implemented
+* Parsing system implemented
+* JSON output generated
+* Documentation and screenshots included in docs folder
+
+---
+
+## Conclusion
+
+TALASH provides a functional prototype for CV parsing with structured output and a simple interface, serving as a foundation for future development.
+
+---
