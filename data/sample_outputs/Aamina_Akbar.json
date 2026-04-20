@@ -1,85 +1,105 @@
 {
   "personal_information": {
     "name": "Aamina Akbar",
-    "email": "dr.shaheen@fui.edu.pk",
-    "phone": "5147939 2"
+    "email": "",
+    "phone": "",
+    "position_applied": "Assistant Professor - Electrical & Computer Engineering - SEECS",
+    "dob": "18-Nov-1987"
   },
   "education": [
     {
-      "degree": "PhD Electrical (Communication) Wireless Communication",
-      "grade": "3.83 ",
-      "year": "20",
-      "institution": "of Space Technology"
+      "degree": "PhD Electrical (Communication) Wireless Communication, Convex",
+      "grade": "3.83",
+      "year": "2025",
+      "institution": "Institute of Space Technology"
     },
     {
-      "degree": "MS Electrical (Telecom) Telecommunication 3.90 2013 Center f",
-      "grade": "3.90 ",
-      "year": "20",
-      "institution": "Advanced Studies in"
+      "degree": "MS Electrical (Telecom) Telecommunication",
+      "grade": "3.90",
+      "year": "2013",
+      "institution": "Center for Advanced Studies in"
     },
     {
-      "degree": "BE Electrical(Telecom) Telecommunication 2.63 2010 NUST",
-      "grade": "2.63 ",
-      "year": "20",
-      "institution": "2.63 2010 NUST"
+      "degree": "BE Electrical(Telecom) Telecommunication",
+      "grade": "2.63",
+      "year": "2010",
+      "institution": "NUST"
     },
     {
-      "degree": "HSSC Pre-Engineering 76% 2006 Federal Board",
+      "degree": "HSSC Pre-Engineering",
       "grade": "76",
-      "year": "20",
-      "institution": "2006 Federal Board"
+      "year": "2006",
+      "institution": "Federal Board"
     },
     {
-      "degree": "SSC Science 88% 2004 Federal Board",
+      "degree": "SSC Science",
       "grade": "88",
-      "year": "20",
-      "institution": "2004 Federal Board"
-    },
-    {
-      "degree": "PhD studies.",
-      "grade": "",
-      "year": "",
-      "institution": "for PhD studies."
+      "year": "2004",
+      "institution": "Federal Board"
     }
   ],
   "experience": [
     {
-      "raw": "Lecturer Foundation University Rawalpindi Campus RAWALPINDI Feb-2014 - Sep-2024",
-      "years": [
-        "20",
-        "20"
-      ]
+      "title": "Lecturer",
+      "organization": "Foundation University Rawalpindi Campus RAWALPINDI",
+      "start_year": "2014",
+      "end_year": "2024",
+      "duration": "Feb-2014 - Sep-2024"
     },
     {
-      "raw": "Membership Pakistan Engineering Council Number-ELECT/32735",
-      "years": []
-    },
-    {
-      "raw": "Merit Scholarships Merit scholarship in MS Electrical(Telecom) Engineering by Center for Advanced Studies in Engineering",
-      "years": []
-    },
-    {
-      "raw": "Dr. M. Shaheen Reference Dean & Professor at Foundation Foundation University School of 03175634789 dr.shaheen@fui.edu.p",
-      "years": []
-    },
-    {
-      "raw": "Dr. Adnan Zafar Reference HoD Electrical Engineering Institute of Space Technology 03414965030 adnan.zafar@ist.edu.pk",
-      "years": []
+      "title": "Research Associate",
+      "organization": "Institute of Space Technology, Islamabad, Pakistan RAWALPINDI",
+      "start_year": "2019",
+      "end_year": "2021",
+      "duration": "Oct-2019 - Mar-2021"
     }
-  ],
-  "skills": [
-    "Research"
   ],
   "publications": [
     {
-      "title": "Joint Backhaul Pairing and Myra Khalid Aamina Akbar, International 0.00 0 1-6 Nov-"
+      "title": "Joint Backhaul Pairing and Myra Khalid Aamina Akbar, International 0.00 0 1-6 Nov-",
+      "venue": "Conference",
+      "type": "Conference",
+      "year": "2023",
+      "impact_factor": ""
     },
     {
-      "title": "Resource Allocation of Hassaan Khaliq Conference 2023"
+      "title": "Moving Small Cells Using Qureshi, Sobia",
+      "venue": "Journal",
+      "type": "Journal",
+      "year": "",
+      "impact_factor": "2.20"
     },
     {
-      "title": "Ga-Optimized Jt-Comp F- Aamina Akbar Ashfaq Ahmed, Journal 5147939 2.20 72 102715 Oct-"
+      "title": "Noma in Hetnets: Adaptive Adnan Zafar, Sobia 2025 Resource Allocation with Jangsher",
+      "venue": "Journal",
+      "type": "Journal",
+      "year": "",
+      "impact_factor": "4.40"
+    },
+    {
+      "title": "enabled framework with Adnan Zafar, Sobia 2024 adaptive OMA/NOMA in Jangsher",
+      "venue": "Journal",
+      "type": "Journal",
+      "year": "",
+      "impact_factor": "4.40"
+    },
+    {
+      "title": "technologies: A survey on Farrukh Aziz Bhatti 2021 issues and solution",
+      "venue": "",
+      "type": "",
+      "year": "",
+      "impact_factor": ""
     }
   ],
-  "missing_information": []
+  "skills": [
+    "5G",
+    "NOMA",
+    "Optimization",
+    "Research",
+    "Wireless Communication"
+  ],
+  "missing_information": [
+    "Email address not found in CV",
+    "Phone number not found in CV"
+  ]
 }

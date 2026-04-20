@@ -1,91 +1,125 @@
 {
   "personal_information": {
     "name": "Muhammad Salman",
-    "email": "anwar.ce@must.edu.pk",
-    "phone": "10 84 5463"
+    "email": "",
+    "phone": "",
+    "position_applied": "Assistant Professor - Electrical & Computer Engineering - SEECS",
+    "dob": ""
   },
   "education": [
     {
-      "degree": "PhD in Electrical Engineering Communication Systems 3.33 202",
-      "grade": "3.33 ",
-      "year": "20",
-      "institution": "Islamic university, Islamabad"
+      "degree": "PhD in Electrical Engineering Communication Systems",
+      "grade": "3.33",
+      "year": "2024",
+      "institution": "International Islamic university, Islamabad"
     },
     {
-      "degree": "MS in Electrical Engineering Communication Systems 3.03 2014",
-      "grade": "3.03 ",
-      "year": "20",
-      "institution": "Islamabad, Attock Campus"
+      "degree": "MS in Electrical Engineering Communication Systems",
+      "grade": "3.03",
+      "year": "2014",
+      "institution": "COMSATS University, Islamabad, Attock Campus"
     },
     {
-      "degree": "BSc Electronics Engineering Electronics 69.84 2011 COMSATS U",
-      "grade": "69.84 ",
-      "year": "20",
-      "institution": "Islamabad, Abbottabad Campus"
+      "degree": "BSc Electronics Engineering Electronics",
+      "grade": "69.84",
+      "year": "2011",
+      "institution": "COMSATS University, Islamabad, Abbottabad Campus"
     },
     {
-      "degree": "HSSC Pre-Engineering 65.45 2006 B.I.S.E Bannu",
-      "grade": "65.45 ",
-      "year": "20",
-      "institution": "2006 B.I.S.E Bannu"
+      "degree": "HSSC Pre-Engineering",
+      "grade": "65.45",
+      "year": "2006",
+      "institution": "B.I.S.E Bannu"
     },
     {
-      "degree": "SSc Science Subjects 71 2004 B.I.S.E Bannu",
-      "grade": "71 ",
-      "year": "20",
-      "institution": "2004 B.I.S.E Bannu"
+      "degree": "SSc Science Subjects",
+      "grade": "71",
+      "year": "2004",
+      "institution": "B.I.S.E Bannu"
     }
   ],
   "experience": [
     {
-      "raw": "Program Coordinator Qurtuba University, D.I.Khan DERA ISMAIL KHAN Sep-2017 - Aug-2023",
-      "years": [
-        "20",
-        "20"
-      ]
+      "title": "Program Coordinator",
+      "organization": "Qurtuba University, D.I.Khan DERA ISMAIL KHAN",
+      "start_year": "2017",
+      "end_year": "2023",
+      "duration": "Sep-2017 - Aug-2023"
     },
     {
-      "raw": "Support Engineer Al-Rehman enterprises, Islamabad Islamabad, Pakistan Jan-2012 - Aug-2015",
-      "years": [
-        "20",
-        "20"
-      ]
+      "title": "Support Engineer",
+      "organization": "Al-Rehman enterprises, Islamabad Islamabad, Pakistan",
+      "start_year": "2012",
+      "end_year": "2015",
+      "duration": "Jan-2012 - Aug-2015"
     },
     {
-      "raw": "Lecturer Qurtuba University, D.I.Khan D.I.Khan (KPK), Pakistan Aug-2015 - Mar-2018",
-      "years": [
-        "20",
-        "20"
-      ]
+      "title": "Lecturer",
+      "organization": "Qurtuba University, D.I.Khan D.I.Khan (KPK), Pakistan",
+      "start_year": "2015",
+      "end_year": "2018",
+      "duration": "Aug-2015 - Mar-2018"
     },
     {
-      "raw": "Assistant Professor Qurtuba University, D.I.Khan D.I.Khan (KPK), Pakistan Mar-2018 - Aug-2023",
-      "years": [
-        "20",
-        "20"
-      ]
+      "title": "Assistant Professor",
+      "organization": "Qurtuba University, D.I.Khan D.I.Khan (KPK), Pakistan",
+      "start_year": "2018",
+      "end_year": "2023",
+      "duration": "Mar-2018 - Aug-2023"
     },
     {
-      "raw": "Associate Professor Xi'an International University, China Shaanxi, China Jan-2025 - Present",
-      "years": [
-        "20"
-      ]
+      "title": "Associate Professor",
+      "organization": "Xi'an International University, China Shaanxi, China",
+      "start_year": "2025",
+      "end_year": "Present",
+      "duration": "Jan-2025 - Present"
+    }
+  ],
+  "publications": [
+    {
+      "title": "Integrating Deterministic Munir 5485 2025 Clustering, Neural Networks, and Energy-Aware Routing for Enhanced Efficiency and Longevity in Wireless Sensor",
+      "venue": "International Journal",
+      "type": "Journal",
+      "year": "",
+      "impact_factor": "2.50"
+    },
+    {
+      "title": "PredictiveModeling of PM2.5 Munir, Athar Waseem 3584 2025 Using Deep Learning and",
+      "venue": "International Journal",
+      "type": "Journal",
+      "year": "",
+      "impact_factor": "2.80"
+    },
+    {
+      "title": "Salesman Problem Solution Farman Ali\u2217, Ammar 2021 using Hybrid Algorithm based Armghan, on Best-Worst Ant System Muhammad Fahad and Particle Swarm Munir, Fayadh Optimization Alenezi, Fazal Ali, Norah ",
+      "venue": "international Conference",
+      "type": "Conference",
+      "year": "",
+      "impact_factor": "0.00"
+    },
+    {
+      "title": "in WSNs with Hybrid LEACH- Muhammad Fahad 2024 D and ANN Munir, Mardeni Bin Roslee, Adnan Anwar Awan, Athar Waseem",
+      "venue": "International Journal",
+      "type": "Journal",
+      "year": "",
+      "impact_factor": "2.10"
+    },
+    {
+      "title": "Optimization: Efficient Path Daraz, Atif M. Alamri, 2970 2024 Selection in Wireless Sensor Salman A. AlQahtani Networks with Hybrid ANN",
+      "venue": "",
+      "type": "",
+      "year": "",
+      "impact_factor": ""
     }
   ],
   "skills": [
     "Deep Learning",
+    "Optimization",
     "Research"
   ],
-  "publications": [
-    {
-      "title": "A Hybrid Framework Muhammad Salman Qamar Muhammad Fahad International Journal 3 2.10 84 5463- Jul-"
-    },
-    {
-      "title": "Integrating Deterministic Munir 5485 2025"
-    },
-    {
-      "title": "AI for Cleaner Air: Muhammad Salman Qamar Muhammad Fahad International Journal 3 2.50 144 3557- Sep-"
-    }
-  ],
-  "missing_information": []
+  "missing_information": [
+    "Email address not found in CV",
+    "Phone number not found in CV",
+    "Date of birth not detected"
+  ]
 }
