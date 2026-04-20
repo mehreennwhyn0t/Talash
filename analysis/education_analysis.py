@@ -79,9 +79,6 @@ def detect_education_gaps(ordered_records: List[Dict]) -> List[Dict]:
         if current_year is None or next_year is None:
             continue
 
-        # Simple heuristic:
-        # if next degree completion year is more than 3 years after current,
-        # flag a potential education gap
         year_diff = next_year - current_year
 
         if year_diff > 3:
@@ -90,7 +87,7 @@ def detect_education_gaps(ordered_records: List[Dict]) -> List[Dict]:
                     "after_degree": current_record.get("degree", ""),
                     "before_degree": next_record.get("degree", ""),
                     "gap_years": year_diff,
-                    "status": "potential_gap",
+                    "status": "requires_review",
                 }
             )
 
@@ -187,12 +184,12 @@ def generate_education_summary(
 
     if specialization_consistency != "insufficient_data":
         if specialization_consistency == "mostly_consistent":
-            parts.append("The academic pathway appears broadly consistent in specialization.")
+            parts.append("The candidate demonstrates a generally consistent academic specialization pathway.")
         else:
             parts.append("Specialization consistency is unclear from the available records.")
 
     if gaps:
-        parts.append(f"{len(gaps)} potential education gap(s) were detected and should be reviewed.")
+        parts.append(f"{len(gaps)} education timeline gap(s) were detected and should be reviewed.")
     else:
         parts.append("No major educational gaps were detected from the available completion years.")
 

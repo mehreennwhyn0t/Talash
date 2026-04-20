@@ -149,13 +149,18 @@ def extract_specialization_from_degree(degree: str) -> str:
         return ""
 
     degree_clean = " ".join(str(degree).split())
+    degree_lower = degree_clean.lower()
 
-    splitters = [" in ", " - ", " (", " Engineering ", " Sciences "]
+    splitters = [" in ", " - ", " (", " engineering ", " sciences "]
+
     for splitter in splitters:
-        if splitter.lower() in degree_clean.lower():
-            parts = re.split(splitter, degree_clean, maxsplit=1, flags=re.IGNORECASE)
-            if len(parts) > 1:
-                return parts[1].strip(" )-,")
+        idx = degree_lower.find(splitter.lower())
+        if idx != -1:
+            extracted = degree_clean[idx + len(splitter):]
+            extracted = extracted.replace("(", "").replace(")", "")
+            extracted = extracted.split(",")[0]
+            extracted = " ".join(extracted.split())
+            return extracted.strip(" -")
 
     return ""
 
