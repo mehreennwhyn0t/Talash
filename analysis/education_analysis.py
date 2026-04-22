@@ -10,6 +10,9 @@ from analysis.normalizers import (
 )
 
 
+HIGHER_ED_LEVELS = {"UG", "PG", "PhD"}
+
+
 def enrich_education_records(education_records: List[Dict]) -> List[Dict]:
     """
     Add analysis-friendly fields to parsed education records.
@@ -65,7 +68,7 @@ def build_normalized_scores(ordered_records: List[Dict]) -> List[Dict]:
 def detect_education_gaps(ordered_records: List[Dict]) -> List[Dict]:
     """
     Basic gap detection using consecutive education completion years.
-    This is a Milestone 2 starter version.
+    This is still a starter version for Milestone 2.
     """
     gaps = []
 
@@ -81,6 +84,8 @@ def detect_education_gaps(ordered_records: List[Dict]) -> List[Dict]:
 
         year_diff = next_year - current_year
 
+        # More than 3 years between consecutive degree completion years
+        # is flagged for review.
         if year_diff > 3:
             gaps.append(
                 {
@@ -88,6 +93,7 @@ def detect_education_gaps(ordered_records: List[Dict]) -> List[Dict]:
                     "before_degree": next_record.get("degree", ""),
                     "gap_years": year_diff,
                     "status": "requires_review",
+                    "reason": "Large year difference between consecutive education records",
                 }
             )
 
@@ -96,7 +102,7 @@ def detect_education_gaps(ordered_records: List[Dict]) -> List[Dict]:
 
 def analyze_progression(ordered_records: List[Dict]) -> str:
     """
-    Basic performance trend using normalized scores only.
+    Improved progression logic using consecutive normalized scores.
     """
     scores = [
         record.get("score_normalized_100")
@@ -107,27 +113,47 @@ def analyze_progression(ordered_records: List[Dict]) -> str:
     if len(scores) < 2:
         return "insufficient_data"
 
-    if scores[-1] > scores[0]:
+    positive_steps = 0
+    negative_steps = 0
+
+    for i in range(len(scores) - 1):
+        if scores[i + 1] > scores[i]:
+            positive_steps += 1
+        elif scores[i + 1] < scores[i]:
+            negative_steps += 1
+
+    if positive_steps > 0 and negative_steps == 0:
         return "improving"
-    if scores[-1] < scores[0]:
+
+    if negative_steps > 0 and positive_steps == 0:
         return "declining"
+
+    if positive_steps > 0 and negative_steps > 0:
+        return "mixed"
+
     return "stable"
 
 
 def check_specialization_consistency(ordered_records: List[Dict]) -> str:
     """
-    Lightweight check whether UG/PG/PhD seem topically related.
+    Check whether UG/PG/PhD appear broadly aligned by domain keywords.
     """
-    higher_ed = [
-        record.get("degree", "").lower()
-        for record in ordered_records
-        if record.get("education_level") in {"UG", "PG", "PhD"}
-    ]
+    higher_ed_text = []
 
-    if len(higher_ed) < 2:
+    for record in ordered_records:
+        if record.get("education_level") in HIGHER_ED_LEVELS:
+            combined_text = " ".join(
+                [
+                    str(record.get("degree", "")),
+                    str(record.get("specialization_inferred", "")),
+                ]
+            ).lower()
+            higher_ed_text.append(combined_text)
+
+    if len(higher_ed_text) < 2:
         return "insufficient_data"
 
-    keywords = [
+    domain_keywords = {
         "electrical",
         "computer",
         "telecom",
@@ -138,18 +164,30 @@ def check_specialization_consistency(ordered_records: List[Dict]) -> str:
         "ai",
         "machine learning",
         "network",
-    ]
+        "systems",
+    }
 
-    matched_keywords = set()
-    for degree in higher_ed:
-        for keyword in keywords:
-            if keyword in degree:
-                matched_keywords.add(keyword)
+    matched_counts = []
+    for text in higher_ed_text:
+        matched = {keyword for keyword in domain_keywords if keyword in text}
+        matched_counts.append(matched)
 
-    if len(matched_keywords) >= 1:
+    common_keywords = set.intersection(*matched_counts) if matched_counts else set()
+
+    if len(common_keywords) >= 1:
         return "mostly_consistent"
 
     return "unclear"
+
+
+def build_gap_summary(gaps: List[Dict]) -> str:
+    """
+    Convert gap list into a simple readable label.
+    """
+    if not gaps:
+        return "No major education timeline gaps detected."
+
+    return f"{len(gaps)} education timeline gap(s) require review."
 
 
 def generate_education_summary(
@@ -179,19 +217,22 @@ def generate_education_summary(
 
     parts[-1] += "."
 
-    if progression_label != "insufficient_data":
-        parts.append(f"Academic performance trend appears {progression_label}.")
+    if progression_label == "improving":
+        parts.append("Academic performance trend appears improving.")
+    elif progression_label == "declining":
+        parts.append("Academic performance trend appears declining.")
+    elif progression_label == "mixed":
+        parts.append("Academic performance trend appears mixed across educational stages.")
+    elif progression_label == "stable":
+        parts.append("Academic performance appears broadly stable across available educational stages.")
 
     if specialization_consistency != "insufficient_data":
         if specialization_consistency == "mostly_consistent":
             parts.append("The candidate demonstrates a generally consistent academic specialization pathway.")
         else:
-            parts.append("Specialization consistency is unclear from the available records.")
+            parts.append("Specialization consistency is unclear from the available education records.")
 
-    if gaps:
-        parts.append(f"{len(gaps)} education timeline gap(s) were detected and should be reviewed.")
-    else:
-        parts.append("No major educational gaps were detected from the available completion years.")
+    parts.append(build_gap_summary(gaps))
 
     return " ".join(parts)
 
@@ -210,6 +251,7 @@ def analyze_education_profile(profile: Dict) -> Dict:
     gaps = detect_education_gaps(ordered_timeline)
     progression_label = analyze_progression(ordered_timeline)
     specialization_consistency = check_specialization_consistency(ordered_timeline)
+    gap_summary = build_gap_summary(gaps)
 
     education_summary = generate_education_summary(
         ordered_records=ordered_timeline,
@@ -224,6 +266,7 @@ def analyze_education_profile(profile: Dict) -> Dict:
         "progression_label": progression_label,
         "specialization_consistency": specialization_consistency,
         "gaps": gaps,
+        "gap_summary": gap_summary,
         "gap_justification": [],
         "institution_quality": [],
         "education_summary": education_summary,
