@@ -22,14 +22,16 @@ def enrich_education_records(education_records: List[Dict]) -> List[Dict]:
         institution = record.get("institution", "")
         year = record.get("year", "")
 
+        specialization = extract_specialization_from_degree(degree)
+
         enriched_record = {
             **record,
             "education_level": classify_education_level(degree),
             "score_original": grade,
             "score_type": detect_score_type(grade),
             "score_normalized_100": normalize_score_to_100(grade),
-            "specialization_inferred": extract_specialization_from_degree(degree),
-            "institution_clean": " ".join(str(institution).split()),
+            "specialization_inferred": specialization if specialization else "N/A",
+            "institution_clean": " ".join(str(institution).split()) if institution else "N/A",
             "year_int": safe_int(year),
         }
         enriched.append(enriched_record)
@@ -61,9 +63,6 @@ def build_normalized_scores(ordered_records: List[Dict]) -> List[Dict]:
 
 
 def build_education_table(ordered_records: List[Dict]) -> List[Dict]:
-    """
-    Table-friendly output for Streamlit / UI
-    """
     table = []
 
     for record in ordered_records:
@@ -84,6 +83,30 @@ def build_education_table(ordered_records: List[Dict]) -> List[Dict]:
         )
 
     return table
+
+
+def build_gap_table(gaps: List[Dict]) -> List[Dict]:
+    if not gaps:
+        return [
+            {
+                "After Degree": "N/A",
+                "Before Degree": "N/A",
+                "Gap Years": 0,
+                "Status": "No major gaps detected",
+                "Reason": "N/A",
+            }
+        ]
+
+    return [
+        {
+            "After Degree": gap.get("after_degree", "N/A"),
+            "Before Degree": gap.get("before_degree", "N/A"),
+            "Gap Years": gap.get("gap_years", "N/A"),
+            "Status": gap.get("status", "N/A"),
+            "Reason": gap.get("reason", "N/A"),
+        }
+        for gap in gaps
+    ]
 
 
 def detect_education_gaps(ordered_records: List[Dict]) -> List[Dict]:
@@ -151,16 +174,26 @@ def check_specialization_consistency(ordered_records: List[Dict]) -> str:
 
     for r in ordered_records:
         if r.get("education_level") in HIGHER_ED_LEVELS:
-            text = (r.get("degree", "") + " " + r.get("specialization_inferred", "")).lower()
+            text = (
+                str(r.get("degree", "")) + " " + str(r.get("specialization_inferred", ""))
+            ).lower()
             texts.append(text)
 
     if len(texts) < 2:
         return "insufficient_data"
 
     keywords = {
-        "electrical", "computer", "telecom", "communication",
-        "electronics", "software", "data", "ai",
-        "machine learning", "network", "systems"
+        "electrical",
+        "computer",
+        "telecom",
+        "communication",
+        "electronics",
+        "software",
+        "data",
+        "ai",
+        "machine learning",
+        "network",
+        "systems",
     }
 
     sets = []
@@ -195,7 +228,7 @@ def generate_education_summary(
 
     parts = [f"The candidate's highest detected qualification is {degree}"]
 
-    if inst:
+    if inst and inst != "N/A":
         parts[-1] += f" from {inst}"
     if year:
         parts[-1] += f" ({year})"
@@ -223,6 +256,24 @@ def generate_education_summary(
     return " ".join(parts)
 
 
+def build_education_highlights(
+    ordered_records: List[Dict],
+    progression_label: str,
+    specialization_consistency: str,
+    gaps: List[Dict],
+) -> Dict:
+    highest_record = ordered_records[-1] if ordered_records else {}
+
+    return {
+        "highest_degree": highest_record.get("degree", "N/A"),
+        "highest_institution": highest_record.get("institution_clean", "N/A"),
+        "highest_year": highest_record.get("year", "N/A"),
+        "progression_label": progression_label,
+        "specialization_consistency": specialization_consistency,
+        "gap_count": len(gaps),
+    }
+
+
 def analyze_education_profile(profile: Dict) -> Dict:
     education_records = profile.get("education", [])
 
@@ -233,6 +284,8 @@ def analyze_education_profile(profile: Dict) -> Dict:
     education_table = build_education_table(ordered)
 
     gaps = detect_education_gaps(ordered)
+    gap_table = build_gap_table(gaps)
+
     progression = analyze_progression(ordered)
     consistency = check_specialization_consistency(ordered)
     gap_summary = build_gap_summary(gaps)
@@ -241,9 +294,14 @@ def analyze_education_profile(profile: Dict) -> Dict:
         ordered, progression, consistency, gaps
     )
 
+    highlights = build_education_highlights(
+        ordered, progression, consistency, gaps
+    )
+
     return {
         "ordered_timeline": ordered,
         "education_table": education_table,
+        "gap_table": gap_table,
         "normalized_scores": normalized_scores,
         "progression_label": progression,
         "specialization_consistency": consistency,
@@ -251,5 +309,6 @@ def analyze_education_profile(profile: Dict) -> Dict:
         "gap_summary": gap_summary,
         "gap_justification": [],
         "institution_quality": [],
+        "education_highlights": highlights,
         "education_summary": summary,
     }
