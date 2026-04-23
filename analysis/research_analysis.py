@@ -1,5 +1,5 @@
 def extract_year(text):
-    for word in text.split():
+    for word in str(text).split():
         if word.isdigit() and len(word) == 4:
             return word
     return None
@@ -14,7 +14,14 @@ def research_analysis(parsed_data):
     conference = 0
 
     for pub in publications:
-        pub_lower = pub.lower()
+
+        # FIX: handle dict OR string
+        if isinstance(pub, dict):
+            text = pub.get("title", "")
+        else:
+            text = str(pub)
+
+        pub_lower = text.lower()
 
         if "journal" in pub_lower:
             journal += 1
@@ -24,7 +31,14 @@ def research_analysis(parsed_data):
     years = {}
 
     for pub in publications:
-        year = extract_year(pub)
+
+        if isinstance(pub, dict):
+            text = pub.get("title", "")
+        else:
+            text = str(pub)
+
+        year = extract_year(text)
+
         if year:
             years[year] = years.get(year, 0) + 1
 
