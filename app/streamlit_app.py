@@ -8,11 +8,10 @@ import pandas as pd
 from preprocessing.pdf_reader import extract_text_from_pdf
 from preprocessing.parser import parse_candidate_profile
 
-# SAFE MODULE IMPORTS
+# SAFE IMPORTS
 import analysis.education_analysis as edu
 import analysis.experience_analysis as exp
 import analysis.research_analysis as res
-import analysis.summary_generator as summ
 
 # =============================
 # PAGE CONFIG
@@ -48,30 +47,19 @@ def process_pdf(pdf_path: Path):
 # =============================
 def render_profile(text: str, profile: dict):
 
-    # SAFE ANALYSIS CALLS
+    # ===== ANALYSIS (RUN ONCE ONLY) =====
     education = {}
-    if hasattr(edu, "analyze_education_profile"):
-        education = edu.analyze_education_profile(profile)
-    elif hasattr(edu, "education_analysis"):
+    if hasattr(edu, "education_analysis"):
         education = edu.education_analysis(profile)
+    elif hasattr(edu, "analyze_education_profile"):
+        education = edu.analyze_education_profile(profile)
 
-    experience = {}
-    if hasattr(exp, "analyze_experience_profile"):
-        experience = exp.analyze_experience_profile(profile)
-    elif hasattr(exp, "experience_analysis"):
-        experience = exp.experience_analysis(profile)
+    experience = exp.analyze_experience(profile)
+    research = res.research_analysis(profile)
 
-    research = {}
-    if hasattr(res, "analyze_research_profile"):
-        research = res.analyze_research_profile(profile)
-    elif hasattr(res, "research_analysis"):
-        research = res.research_analysis(profile)
-
-    summary = {}
-    if hasattr(summ, "generate_summary"):
-        summary = summ.generate_summary(education, experience, research, {})
-
-    # -------- TAB 2: Parsed Data --------
+    # =============================
+    # TAB 2 — PARSED DATA
+    # =============================
     with tab2:
         st.success("CV processed successfully")
 
@@ -95,89 +83,75 @@ def render_profile(text: str, profile: dict):
         st.subheader("Publications")
         st.json(profile.get("publications", []))
 
-        st.subheader("Missing Information Flags")
-        st.write(profile.get("missing_information", []))
-
-    # -------- TAB 3: Analysis --------
+    # =============================
+    # TAB 3 — ANALYSIS
+    # =============================
     with tab3:
-        st.subheader("Education Analysis")
+        st.subheader("Analysis")
 
-        if isinstance(education, dict):
-            st.write("Progression:", education.get("progression_label", "N/A"))
-            st.write("Consistency:", education.get("specialization_consistency", "N/A"))
-            st.write("Summary:", education.get("education_summary", "N/A"))
-        else:
-            st.info("No education analysis available")
+        st.write("Education Analysis:")
+        st.write(education)
 
-        st.divider()
+        st.write("Experience Analysis:")
+        st.write(experience)
 
-        st.subheader("Experience Analysis")
-        st.write(experience if experience else "No experience data")
+        st.write("Research Analysis:")
+        st.write(research)
 
-        st.divider()
-
-        st.subheader("Research Analysis")
-        st.write(research if research else "No research data")
-
-        st.divider()
-
-        st.subheader("Candidate Summary")
-        st.write(summary if summary else "No summary generated")
-
-    # -------- TAB 4: Tables --------
+    # =============================
+    # TAB 4 — TABLES
+    # =============================
     with tab4:
-        st.subheader("Education Table")
+        st.subheader("Tables")
 
-        if isinstance(education, dict) and education.get("education_table"):
-            df = pd.DataFrame(education["education_table"])
+        if profile.get("education"):
+            df = pd.DataFrame(profile["education"])
             st.dataframe(df)
         else:
-            st.info("No structured education data")
+            st.info("No education data")
 
-        st.subheader("Normalized Scores")
-
-        if isinstance(education, dict) and education.get("normalized_scores"):
-            df2 = pd.DataFrame(education["normalized_scores"])
-            st.dataframe(df2)
-
-    # -------- TAB 5: Charts --------
+    # =============================
+    # TAB 5 — CHARTS
+    # =============================
     with tab5:
         st.subheader("Publications by Year")
 
-        if isinstance(research, dict) and research.get("publications_by_year"):
-            chart_data = pd.DataFrame.from_dict(
+        if research.get("publications_by_year"):
+            chart_df = pd.DataFrame.from_dict(
                 research["publications_by_year"],
                 orient="index",
                 columns=["Publications"]
             )
-            st.bar_chart(chart_data)
+            st.bar_chart(chart_df)
         else:
             st.info("No publication data available")
 
-    # -------- TAB 6: Email Draft --------
+    # =============================
+    # TAB 6 — EMAIL
+    # =============================
     with tab6:
         st.subheader("Email Draft")
 
-        if isinstance(summary, dict) and summary.get("email_draft"):
-            st.write("Subject:")
-            st.code(summary["email_draft"].get("subject", ""))
+        st.write("Subject: CV Review Summary")
+        st.write("Body: Candidate has been analyzed successfully.")
 
-            st.write("Body:")
-            st.write(summary["email_draft"].get("body", ""))
-        else:
-            st.info("Email draft not available yet")
-
-    # -------- TAB 7: Compare --------
+    # =============================
+    # TAB 7 — COMPARE
+    # =============================
     with tab7:
-        st.subheader("Candidate Comparison")
+        st.subheader("Comparison")
 
-        if isinstance(research, dict):
-            st.write("Publications:", research.get("total_publications", 0))
+        comparison = [{
+            "name": profile.get("personal_information", {}).get("name", "Unknown"),
+            "publications": research.get("total_publications", 0)
+        }]
 
-        if isinstance(education, dict):
-            st.write("Progression:", education.get("progression_label", "N/A"))
+        df = pd.DataFrame(comparison)
+        st.dataframe(df)
+
+
 # =============================
-# TAB 1: UPLOAD UI
+# TAB 1 — UPLOAD
 # =============================
 with tab1:
 
@@ -188,11 +162,15 @@ with tab1:
         "Choose input source",
         ["Upload CV (PDF)", "Load sample CV from folder"],
         horizontal=True,
-        key="main_radio"   # ✅ FIXED DUPLICATE ERROR
+        key="input_mode"
     )
 
     if mode == "Upload CV (PDF)":
-        uploaded_file = st.file_uploader("Upload CV (PDF)", type=["pdf"])
+        uploaded_file = st.file_uploader(
+            "Upload CV (PDF)",
+            type=["pdf"],
+            key="upload_cv"
+        )
 
         if uploaded_file:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
@@ -206,6 +184,7 @@ with tab1:
                 st.error(f"Error: {e}")
             finally:
                 temp_pdf_path.unlink(missing_ok=True)
+
         else:
             st.info("Upload a CV to begin.")
 
@@ -213,17 +192,14 @@ with tab1:
         pdf_files = sorted(INPUT_DIR.glob("*.pdf")) if INPUT_DIR.exists() else []
 
         if not pdf_files:
-            st.warning("No sample PDFs found in data/input_cvs/")
+            st.warning("No sample PDFs found")
         else:
             selected_pdf = st.selectbox(
-                "Select a sample CV from data/input_cvs/",
+                "Select a sample CV",
                 options=pdf_files,
                 format_func=lambda p: p.name,
             )
 
             if st.button("Process Selected CV"):
-                try:
-                    text, profile = process_pdf(selected_pdf)
-                    render_profile(text, profile)
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                text, profile = process_pdf(selected_pdf)
+                render_profile(text, profile)
