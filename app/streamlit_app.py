@@ -3,12 +3,19 @@ import tempfile
 from pathlib import Path
 
 import streamlit as st
+import pandas as pd
 
 from preprocessing.pdf_reader import extract_text_from_pdf
 from preprocessing.parser import parse_candidate_profile
 
+# SAFE MODULE IMPORTS
+import analysis.education_analysis as edu
+import analysis.experience_analysis as exp
+import analysis.research_analysis as res
+import analysis.summary_generator as summ
+
 # =============================
-# PAGE CONFIG (MUST BE FIRST)
+# PAGE CONFIG
 # =============================
 st.set_page_config(page_title="TALASH - CV Analyzer", layout="wide")
 
@@ -30,15 +37,39 @@ INPUT_DIR = Path("data/input_cvs")
 # =============================
 # PROCESS PDF
 # =============================
-def process_pdf(pdf_path: Path) -> tuple[str, dict]:
+def process_pdf(pdf_path: Path):
     text = extract_text_from_pdf(pdf_path)
     profile = parse_candidate_profile(text)
     return text, profile
 
+
 # =============================
-# RENDER PROFILE (UPDATED)
+# RENDER PROFILE
 # =============================
-def render_profile(text: str, profile: dict) -> None:
+def render_profile(text: str, profile: dict):
+
+    # SAFE ANALYSIS CALLS
+    education = {}
+    if hasattr(edu, "analyze_education_profile"):
+        education = edu.analyze_education_profile(profile)
+    elif hasattr(edu, "education_analysis"):
+        education = edu.education_analysis(profile)
+
+    experience = {}
+    if hasattr(exp, "analyze_experience_profile"):
+        experience = exp.analyze_experience_profile(profile)
+    elif hasattr(exp, "experience_analysis"):
+        experience = exp.experience_analysis(profile)
+
+    research = {}
+    if hasattr(res, "analyze_research_profile"):
+        research = res.analyze_research_profile(profile)
+    elif hasattr(res, "research_analysis"):
+        research = res.research_analysis(profile)
+
+    summary = {}
+    if hasattr(summ, "generate_summary"):
+        summary = summ.generate_summary(education, experience, research, {})
 
     # -------- TAB 2: Parsed Data --------
     with tab2:
@@ -67,56 +98,97 @@ def render_profile(text: str, profile: dict) -> None:
         st.subheader("Missing Information Flags")
         st.write(profile.get("missing_information", []))
 
-        with st.expander("Raw Extracted Text"):
-            st.text(text[:6000] if text else "No text extracted")
-
-        with st.expander("Parsed JSON Output"):
-            st.code(json.dumps(profile, indent=2), language="json")
-
     # -------- TAB 3: Analysis --------
     with tab3:
-        st.subheader("Analysis (Milestone 2)")
-        st.info("Education, Experience, Research, and Summary will appear here")
+        st.subheader("Education Analysis")
+
+        if isinstance(education, dict):
+            st.write("Progression:", education.get("progression_label", "N/A"))
+            st.write("Consistency:", education.get("specialization_consistency", "N/A"))
+            st.write("Summary:", education.get("education_summary", "N/A"))
+        else:
+            st.info("No education analysis available")
+
+        st.divider()
+
+        st.subheader("Experience Analysis")
+        st.write(experience if experience else "No experience data")
+
+        st.divider()
+
+        st.subheader("Research Analysis")
+        st.write(research if research else "No research data")
+
+        st.divider()
+
+        st.subheader("Candidate Summary")
+        st.write(summary if summary else "No summary generated")
 
     # -------- TAB 4: Tables --------
     with tab4:
-        st.subheader("Tables")
+        st.subheader("Education Table")
 
-        if profile.get("education"):
-            import pandas as pd
-            df = pd.DataFrame(profile["education"])
+        if isinstance(education, dict) and education.get("education_table"):
+            df = pd.DataFrame(education["education_table"])
             st.dataframe(df)
         else:
-            st.info("No education data available")
+            st.info("No structured education data")
+
+        st.subheader("Normalized Scores")
+
+        if isinstance(education, dict) and education.get("normalized_scores"):
+            df2 = pd.DataFrame(education["normalized_scores"])
+            st.dataframe(df2)
 
     # -------- TAB 5: Charts --------
     with tab5:
-        st.subheader("Charts")
-        st.info("Charts will be displayed here")
+        st.subheader("Publications by Year")
+
+        if isinstance(research, dict) and research.get("publications_by_year"):
+            chart_data = pd.DataFrame.from_dict(
+                research["publications_by_year"],
+                orient="index",
+                columns=["Publications"]
+            )
+            st.bar_chart(chart_data)
+        else:
+            st.info("No publication data available")
 
     # -------- TAB 6: Email Draft --------
     with tab6:
         st.subheader("Email Draft")
-        st.info("Email draft will be generated here")
+
+        if isinstance(summary, dict) and summary.get("email_draft"):
+            st.write("Subject:")
+            st.code(summary["email_draft"].get("subject", ""))
+
+            st.write("Body:")
+            st.write(summary["email_draft"].get("body", ""))
+        else:
+            st.info("Email draft not available yet")
 
     # -------- TAB 7: Compare --------
     with tab7:
         st.subheader("Candidate Comparison")
-        st.info("Comparison feature coming soon")
 
+        if isinstance(research, dict):
+            st.write("Publications:", research.get("total_publications", 0))
 
+        if isinstance(education, dict):
+            st.write("Progression:", education.get("progression_label", "N/A"))
 # =============================
-# TAB 1: UPLOAD UI (MAIN)
+# TAB 1: UPLOAD UI
 # =============================
 with tab1:
 
     st.title("TALASH - Smart CV Analyzer")
-    st.markdown("### Milestone 2 UI Prototype")
+    st.markdown("### Milestone 2 Integrated System")
 
     mode = st.radio(
         "Choose input source",
         ["Upload CV (PDF)", "Load sample CV from folder"],
         horizontal=True,
+        key="main_radio"   # ✅ FIXED DUPLICATE ERROR
     )
 
     if mode == "Upload CV (PDF)":
