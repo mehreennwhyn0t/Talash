@@ -12,6 +12,8 @@ from preprocessing.parser import parse_candidate_profile
 import analysis.education_analysis as edu
 import analysis.experience_analysis as exp
 import analysis.research_analysis as res
+from analysis.email_drafter import analyze_missing_and_draft_email
+from analysis.summary_generator import generate_summary
 
 # =============================
 # PAGE CONFIG
@@ -47,7 +49,7 @@ def process_pdf(pdf_path: Path):
 # =============================
 def render_profile(text: str, profile: dict):
 
-    # ===== ANALYSIS (RUN ONCE ONLY) =====
+    # ===== ANALYSIS =====
     education = {}
     if hasattr(edu, "education_analysis"):
         education = edu.education_analysis(profile)
@@ -56,6 +58,17 @@ def render_profile(text: str, profile: dict):
 
     experience = exp.analyze_experience(profile)
     research = res.research_analysis(profile)
+
+    # ===== EMAIL + MISSING INFO =====
+    email_result = analyze_missing_and_draft_email(profile)
+
+    # ===== SUMMARY =====
+    summary = generate_summary(
+        education,
+        experience,
+        research,
+        email_result["missing_info_analysis"]
+    )
 
     # =============================
     # TAB 2 — PARSED DATA
@@ -98,6 +111,9 @@ def render_profile(text: str, profile: dict):
         st.write("Research Analysis:")
         st.write(research)
 
+        st.subheader("Candidate Summary")
+        st.write(summary)
+
     # =============================
     # TAB 4 — TABLES
     # =============================
@@ -127,13 +143,26 @@ def render_profile(text: str, profile: dict):
             st.info("No publication data available")
 
     # =============================
-    # TAB 6 — EMAIL
+    # TAB 6 — EMAIL (FIXED)
     # =============================
     with tab6:
-        st.subheader("Email Draft")
+        st.subheader("Missing Information & Email Draft")
 
-        st.write("Subject: CV Review Summary")
-        st.write("Body: Candidate has been analyzed successfully.")
+        missing = email_result["missing_info_analysis"]
+
+        st.write("### Missing Fields")
+        st.write(missing.get("missing", []))
+
+        st.write("### Incomplete Fields")
+        st.write(missing.get("incomplete", []))
+
+        st.write("### Unclear Fields")
+        st.write(missing.get("unclear", []))
+
+        draft = email_result["email_draft"]
+
+        st.text_input("Subject", draft["subject"])
+        st.text_area("Email Body", draft["body"], height=300)
 
     # =============================
     # TAB 7 — COMPARE
