@@ -121,8 +121,8 @@ def render_education_tab(result):
     # Summary metrics
     c1, c2, c3, c4 = st.columns(4)
     c1.markdown(f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Highest Qualification</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{edu.get('highest_qualification', 'N/A')}</span></div>", unsafe_allow_html=True)
-    c2.markdown(f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Academic Strength</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{edu.get('academic_strength', 'N/A').title()}</span></div>", unsafe_allow_html=True)
-    c3.markdown(f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Progression Trend</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{edu.get('progression_trend', 'N/A').title()}</span></div>", unsafe_allow_html=True)
+    c2.markdown(f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Academic Strength</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{str(edu.get('academic_strength') or 'N/A').title()}</span></div>", unsafe_allow_html=True)
+    c3.markdown(f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Progression Trend</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{str(edu.get('progression_trend') or 'N/A').title()}</span></div>", unsafe_allow_html=True)
     c4.markdown(f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Avg Score (/100)</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{edu.get('average_normalized_score', 'N/A')}</span></div>", unsafe_allow_html=True)
 
     # Education table
@@ -136,12 +136,22 @@ def render_education_tab(result):
     st.markdown(f"**Specialization:** {edu.get('specialization_summary', 'N/A')}")
 
     # Score chart
+    # Score chart — use education_table as fallback source
     levels = edu.get("education_levels", [])
     scores = [l for l in levels if l.get("normalized_score")]
+    if not scores:
+        # fallback: build from education_table
+        for row in edu.get("education_table", []):
+            val = row.get("Normalized (/100)")
+            if val and val != "N/A":
+                try:
+                    scores.append({"degree": row.get("Degree", ""), "normalized_score": float(val)})
+                except (ValueError, TypeError):
+                    pass
     if scores:
         chart_df = pd.DataFrame([{
-            "Degree": s["degree"],
-            "Score (/100)": s["normalized_score"]
+            "Degree": s.get("degree", s.get("Degree", "")),
+            "Score (/100)": s.get("normalized_score", s.get("Normalized (/100)", 0))
         } for s in scores])
         fig = px.bar(chart_df, x="Degree", y="Score (/100)",
                      title="Academic Performance Across Levels",
@@ -149,6 +159,8 @@ def render_education_tab(result):
                      color_continuous_scale="Viridis")
         fig.update_layout(height=350)
         st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("Score chart not available — academic scores not detected in CV.")
 
     # Educational gaps
     gaps = edu.get("educational_gaps", [])
@@ -411,8 +423,7 @@ def render_comparison_tab(results):
             "Name": name,
             "Suitability": summ.get("suitability_label", "N/A"),
             "Highest Degree": edu.get("highest_qualification", "N/A"),
-            "Acad. Strength": edu.get("academic_strength", "N/A").title(),
-            "Avg Score": edu.get("average_normalized_score", "N/A"),
+            "Acad. Strength": str(edu.get("academic_strength") or "N/A").title(),            "Avg Score": edu.get("average_normalized_score", "N/A"),
             "Total Exp (yrs)": exp.get("total_experience_years", 0),
             "Career Progress": exp.get("career_progression_label", "N/A"),
             "Publications": res.get("total_publications", 0),

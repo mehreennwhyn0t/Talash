@@ -318,6 +318,18 @@ def analyze_education_profile(profile: dict) -> dict:
     else:
         interpretation_parts.append("No significant educational gaps detected.")
 
+    # Add institution quality note
+    tier1_insts = [i for i in inst_quality_list if i.get("quality", {}).get("tier") == 1]
+    if tier1_insts:
+        interpretation_parts.append(
+            f"Attended {len(tier1_insts)} highly-ranked institution(s): "
+            f"{', '.join(i['institution'] for i in tier1_insts)}."
+        )
+    elif inst_quality_list:
+        interpretation_parts.append(
+            "Institutions attended are recognized but not in top QS/THE rankings."
+        )
+
     interpretation = " ".join(interpretation_parts)
 
     # Step 11: Build table for display
