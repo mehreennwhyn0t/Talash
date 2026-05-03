@@ -1,0 +1,8 @@
+venue,indexing,core_rank,score
+NeurIPS,CORE A*,A*,95
+ICML,CORE A*,A*,95
+ACL,CORE A*,A*,92
+IEEE Conference,IEEE Indexed,B,75
+ACM Conference,ACM Indexed,B,75
+Springer Conference,Springer Indexed,B,70
+Unknown Conference,Unknown,Unknown,30

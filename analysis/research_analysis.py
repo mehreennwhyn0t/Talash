@@ -1,258 +1,279 @@
-"""
-research_analysis.py
-
-Research profile analysis.
-Covers: publication counting, journal/conference classification,
-authorship role analysis, publication timeline, and research summary.
-Uses LLM when available for enhanced analysis.
-"""
-
+import os
 import re
+import pandas as pd
 
 
-def extract_year(text):
-    """Extract a 4-digit year from text."""
-    if not text:
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+JOURNAL_LOOKUP_PATH = os.path.join(BASE_DIR, "data", "lookup", "journal_rankings.csv")
+CONFERENCE_LOOKUP_PATH = os.path.join(BASE_DIR, "data", "lookup", "conference_rankings.csv")
+
+
+def _safe_text(value):
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _load_lookup(path):
+    if os.path.exists(path):
+        return pd.read_csv(path)
+    return pd.DataFrame()
+
+
+def _find_lookup_match(venue, lookup_df):
+    if lookup_df.empty or not venue:
         return None
-    for word in str(text).split():
-        if word.isdigit() and len(word) == 4:
-            return word
-    match = re.search(r'\b((?:19|20)\d{2})\b', str(text))
-    return match.group(1) if match else None
+
+    venue_lower = venue.lower().strip()
+
+    for _, row in lookup_df.iterrows():
+        lookup_venue = str(row.get("venue", "")).lower().strip()
+        if lookup_venue and (lookup_venue in venue_lower or venue_lower in lookup_venue):
+            return row
+
+    return None
 
 
-def classify_publication_type(pub):
-    """Classify a publication as journal or conference."""
-    venue = str(pub.get("venue", "")).lower()
-    title = str(pub.get("title", "")).lower()
-    pub_type = str(pub.get("type", "")).lower()
+def _detect_publication_type(text, venue):
+    combined = f"{text} {venue}".lower()
 
-    if "journal" in pub_type or "journal" in venue:
-        return "journal"
-    elif "conference" in pub_type or "conference" in venue:
-        return "conference"
-    elif any(kw in venue or kw in title for kw in
-             ["symposium", "workshop", "proceedings"]):
-        return "conference"
-    elif any(kw in venue for kw in
-             ["ieee trans", "acm trans", "elsevier", "springer", "wiley"]):
-        return "journal"
-    return "unknown"
+    if any(word in combined for word in ["conference", "proceedings", "symposium", "workshop"]):
+        return "Conference"
+
+    if any(word in combined for word in ["journal", "ieee access", "plos", "springer", "elsevier"]):
+        return "Journal"
+
+    return "Unknown"
 
 
-def determine_authorship_role(pub, candidate_name=""):
-    """Determine the candidate's authorship role in a publication."""
-    position = str(pub.get("candidate_position", "")).lower()
-    if position and position != "unknown":
-        return position
-
-    authors = pub.get("authors", [])
-    if not authors or not candidate_name:
-        return "unknown"
-
-    candidate_lower = candidate_name.lower()
-    candidate_parts = candidate_lower.split()
-
-    for i, author in enumerate(authors):
-        author_lower = author.lower()
-        if (candidate_lower in author_lower
-                or any(part in author_lower for part in candidate_parts if len(part) > 2)):
-            if i == 0:
-                return "first"
-            elif i == len(authors) - 1:
-                return "corresponding"  # Common convention
-            else:
-                return "co-author"
-
-    return "unknown"
+def _extract_year(text):
+    match = re.search(r"(19|20)\d{2}", text)
+    return match.group(0) if match else "Unknown"
 
 
-def analyze_publication_venues(publications):
-    """Analyze publication venue quality indicators."""
-    venues = {}
-    for pub in publications:
-        venue = pub.get("venue", "Unknown")
-        if venue:
-            venues[venue] = venues.get(venue, 0) + 1
+def _detect_role(authors, candidate_name=""):
+    authors_text = _safe_text(authors)
+    candidate = _safe_text(candidate_name)
 
-    impact_factors = []
-    for pub in publications:
-        if_str = pub.get("impact_factor", "")
-        if if_str:
-            try:
-                impact_factors.append(float(if_str))
-            except (ValueError, TypeError):
-                pass
+    if not authors_text:
+        return "Unknown"
 
-    return {
-        "venue_distribution": venues,
-        "avg_impact_factor": (
-            round(sum(impact_factors) / len(impact_factors), 2)
-            if impact_factors else None
-        ),
-        "max_impact_factor": (
-            round(max(impact_factors), 2) if impact_factors else None
-        ),
-        "papers_with_if": len(impact_factors),
-    }
+    author_list = [a.strip() for a in re.split(r",|;|\band\b", authors_text) if a.strip()]
+
+    if not candidate:
+        return "Co-author" if len(author_list) > 1 else "Single Author"
+
+    candidate_lower = candidate.lower()
+
+    for idx, author in enumerate(author_list):
+        if candidate_lower in author.lower() or author.lower() in candidate_lower:
+            if len(author_list) == 1:
+                return "Single Author"
+            if idx == 0:
+                return "First Author"
+            return "Co-author"
+
+    return "Unknown"
 
 
-def research_analysis(parsed_data, candidate_name=""):
-    """
-    Main entry point for research profile analysis.
-    Returns comprehensive research analysis dict.
-    """
+def _extract_publications_from_text(text):
+    text = _safe_text(text)
+    publications = []
+
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+    for line in lines:
+        lower = line.lower()
+
+        publication_keywords = [
+            "journal",
+            "conference",
+            "publication",
+            "published",
+            "paper",
+            "proceedings",
+            "ieee",
+            "springer",
+            "elsevier",
+            "plos",
+        ]
+
+        if any(keyword in lower for keyword in publication_keywords):
+            title = line
+            venue = "Unknown"
+
+            known_venues = [
+                "IEEE Access",
+                "PLOS ONE",
+                "Springer Nature",
+                "Elsevier Journal",
+                "IEEE Conference",
+                "ACM Conference",
+                "Springer Conference",
+                "NeurIPS",
+                "ICML",
+                "ACL",
+            ]
+
+            for known in known_venues:
+                if known.lower() in lower:
+                    venue = known
+                    break
+
+            publications.append({
+                "title": title,
+                "year": _extract_year(line),
+                "venue": venue,
+                "authors": "",
+                "raw_text": line
+            })
+
+    return publications
+
+
+def _get_publications(parsed_data):
+    if not isinstance(parsed_data, dict):
+        return []
+
     publications = parsed_data.get("publications", [])
 
-    if not publications:
-        return {
-            "total_publications": 0,
-            "journal_count": 0,
-            "conference_count": 0,
-            "unknown_type_count": 0,
-            "first_author_count": 0,
-            "corresponding_author_count": 0,
-            "co_author_count": 0,
-            "publications_by_year": {},
-            "publications_by_type": {},
-            "venue_analysis": {},
-            "authorship_summary": "No publications found.",
-            "research_themes": [],
-            "publication_table": [],
-            "research_summary": "No research publications detected in the CV.",
-        }
+    if isinstance(publications, list) and publications:
+        return publications
 
-    if not candidate_name:
-        candidate_name = parsed_data.get(
-            "personal_information", {}
-        ).get("name", "")
+    text = parsed_data.get("text", "") or parsed_data.get("raw_text", "") or parsed_data.get("cv_text", "")
+    return _extract_publications_from_text(text)
 
-    # Classify publications
-    journal_count = 0
-    conference_count = 0
-    unknown_count = 0
-    first_author = 0
-    corresponding = 0
-    co_author = 0
 
-    by_year = {}
-    by_type = {"journal": 0, "conference": 0, "unknown": 0}
-    pub_table = []
+def analyze_research_profile(parsed_data):
+    """
+    Main function for Huma's Milestone 3 research profile analysis.
+    Input: parsed_data dictionary from parser.
+    Output: dictionary with table, counts, score, missing info, and summary.
+    """
 
-    for pub in publications:
-        # Type classification
-        pub_type = classify_publication_type(pub)
-        if pub_type == "journal":
-            journal_count += 1
-            by_type["journal"] += 1
-        elif pub_type == "conference":
-            conference_count += 1
-            by_type["conference"] += 1
+    journal_lookup = _load_lookup(JOURNAL_LOOKUP_PATH)
+    conference_lookup = _load_lookup(CONFERENCE_LOOKUP_PATH)
+
+    candidate_name = ""
+    if isinstance(parsed_data, dict):
+        candidate_name = parsed_data.get("name", "") or parsed_data.get("candidate_name", "")
+
+    publications = _get_publications(parsed_data)
+
+    rows = []
+    missing_info = []
+
+    for idx, pub in enumerate(publications, start=1):
+        if isinstance(pub, dict):
+            title = _safe_text(pub.get("title", ""))
+            year = _safe_text(pub.get("year", ""))
+            venue = _safe_text(pub.get("venue", ""))
+            authors = _safe_text(pub.get("authors", ""))
+            raw_text = _safe_text(pub.get("raw_text", title))
         else:
-            unknown_count += 1
-            by_type["unknown"] += 1
+            title = _safe_text(pub)
+            year = _extract_year(title)
+            venue = "Unknown"
+            authors = ""
+            raw_text = title
 
-        # Authorship role
-        role = determine_authorship_role(pub, candidate_name)
-        if role == "first":
-            first_author += 1
-        elif role == "corresponding":
-            corresponding += 1
-        elif role == "co-author":
-            co_author += 1
+        if not title:
+            title = f"Publication {idx}"
+            missing_info.append(f"Publication {idx}: missing title")
 
-        # Year tracking
-        year = pub.get("year", "") or extract_year(pub.get("title", ""))
-        if year:
-            by_year[str(year)] = by_year.get(str(year), 0) + 1
+        if not year:
+            year = _extract_year(raw_text)
 
-        # Build table row
-        title = pub.get("title", "N/A")
-        if isinstance(title, str) and len(title) > 80:
-            title = title
+        if not year or year == "Unknown":
+            missing_info.append(f"{title}: missing publication year")
 
-        pub_table.append({
+        if not venue:
+            venue = "Unknown"
+            missing_info.append(f"{title}: missing venue name")
+
+        pub_type = _detect_publication_type(raw_text, venue)
+
+        indexing = "Unknown"
+        quartile_or_rank = "Unknown"
+        impact_factor = ""
+        quality_score = 30
+
+        if pub_type == "Journal":
+            match = _find_lookup_match(venue, journal_lookup)
+            if match is not None:
+                indexing = match.get("indexing", "Unknown")
+                quartile_or_rank = match.get("quartile", "Unknown")
+                impact_factor = match.get("impact_factor", "")
+                quality_score = int(match.get("score", 30))
+            else:
+                missing_info.append(f"{title}: journal not found in ranking lookup")
+
+        elif pub_type == "Conference":
+            match = _find_lookup_match(venue, conference_lookup)
+            if match is not None:
+                indexing = match.get("indexing", "Unknown")
+                quartile_or_rank = match.get("core_rank", "Unknown")
+                quality_score = int(match.get("score", 30))
+            else:
+                missing_info.append(f"{title}: conference not found in ranking lookup")
+
+        else:
+            missing_info.append(f"{title}: publication type is unclear")
+
+        role = _detect_role(authors, candidate_name)
+
+        if not authors:
+            missing_info.append(f"{title}: missing authors list")
+
+        rows.append({
             "Title": title,
-            "Type": pub_type.title(),
-            "Venue": str(pub.get("venue", "N/A")),
-            "Year": year or "N/A",
-            "IF": pub.get("impact_factor", "N/A"),
-            "Role": role.title(),
+            "Year": year if year else "Unknown",
+            "Type": pub_type,
+            "Venue": venue if venue else "Unknown",
+            "Authors": authors if authors else "Unknown",
+            "Candidate Role": role,
+            "Indexing": indexing,
+            "Quartile/Rank": quartile_or_rank,
+            "Impact Factor": impact_factor,
+            "Quality Score": quality_score,
         })
 
-    # Venue analysis
-    venue_analysis = analyze_publication_venues(publications)
+    publications_df = pd.DataFrame(rows)
 
-    # Research themes (keyword-based)
-    theme_keywords = {
-        "Machine Learning": ["machine learning", "ml", "neural network", "deep learning", "ann", "cnn", "rnn"],
-        "Wireless Communication": ["wireless", "5g", "noma", "ofdm", "communication", "antenna", "mimo"],
-        "IoT & Sensors": ["iot", "sensor", "wsn", "wireless sensor"],
-        "Computer Vision": ["image", "vision", "object detection", "segmentation"],
-        "NLP": ["nlp", "natural language", "text", "sentiment"],
-        "Optimization": ["optimization", "convex", "resource allocation", "scheduling"],
-        "Networking": ["routing", "network", "clustering", "protocol"],
-        "Signal Processing": ["signal processing", "filter", "spectrum"],
-        "Data Science": ["data", "prediction", "predictive", "analytics", "pm2.5"],
-        "Cybersecurity": ["security", "cyber", "intrusion", "encryption"],
-        "Power Systems": ["power", "energy", "renewable", "grid"],
-    }
+    total_publications = len(rows)
+    journal_count = sum(1 for row in rows if row["Type"] == "Journal")
+    conference_count = sum(1 for row in rows if row["Type"] == "Conference")
+    indexed_count = sum(1 for row in rows if row["Indexing"] != "Unknown")
 
-    theme_counts = {}
-    for pub in publications:
-        text = f"{pub.get('title', '')} {pub.get('venue', '')}".lower()
-        for theme, keywords in theme_keywords.items():
-            if any(kw in text for kw in keywords):
-                theme_counts[theme] = theme_counts.get(theme, 0) + 1
+    if total_publications > 0:
+        research_score = round(sum(row["Quality Score"] for row in rows) / total_publications, 2)
+    else:
+        research_score = 0
+        missing_info.append("No publications found in CV")
 
-    research_themes = sorted(theme_counts.items(), key=lambda x: -x[1])
-    dominant_theme = research_themes[0][0] if research_themes else "Not determined"
+    if research_score >= 80:
+        strength = "strong"
+    elif research_score >= 60:
+        strength = "moderate"
+    elif research_score > 0:
+        strength = "basic"
+    else:
+        strength = "insufficient"
 
-    # Authorship summary
-    total = len(publications)
-    authorship_parts = []
-    if first_author:
-        authorship_parts.append(f"{first_author} as first author")
-    if corresponding:
-        authorship_parts.append(f"{corresponding} as corresponding author")
-    if co_author:
-        authorship_parts.append(f"{co_author} as co-author")
-
-    authorship_summary = (
-        f"Out of {total} publication(s): " + ", ".join(authorship_parts)
-        if authorship_parts
-        else f"{total} publication(s) - authorship roles could not be determined"
+    summary = (
+        f"The candidate has {total_publications} detected publication(s), including "
+        f"{journal_count} journal paper(s) and {conference_count} conference paper(s). "
+        f"{indexed_count} publication(s) were matched with indexing/ranking lookup data. "
+        f"Overall research profile appears {strength} with a research score of {research_score}/100."
     )
 
-    # Research summary
-    summary_parts = [f"{total} publication(s) found"]
-    if journal_count:
-        summary_parts.append(f"{journal_count} journal paper(s)")
-    if conference_count:
-        summary_parts.append(f"{conference_count} conference paper(s)")
-    if venue_analysis.get("avg_impact_factor"):
-        summary_parts.append(
-            f"average impact factor: {venue_analysis['avg_impact_factor']}"
-        )
-    if dominant_theme != "Not determined":
-        summary_parts.append(f"primary research area: {dominant_theme}")
-
-    research_summary = ". ".join(summary_parts) + "."
-
     return {
-        "total_publications": total,
+        "publications_table": publications_df,
+        "research_score": research_score,
+        "total_publications": total_publications,
         "journal_count": journal_count,
         "conference_count": conference_count,
-        "unknown_type_count": unknown_count,
-        "first_author_count": first_author,
-        "corresponding_author_count": corresponding,
-        "co_author_count": co_author,
-        "publications_by_year": dict(sorted(by_year.items())),
-        "publications_by_type": by_type,
-        "venue_analysis": venue_analysis,
-        "authorship_summary": authorship_summary,
-        "research_themes": research_themes,
-        "dominant_theme": dominant_theme,
-        "publication_table": pub_table,
-        "research_summary": research_summary,
+        "indexed_count": indexed_count,
+        "missing_info": missing_info,
+        "summary": summary,
     }
