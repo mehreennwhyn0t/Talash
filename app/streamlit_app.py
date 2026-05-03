@@ -17,7 +17,10 @@ from preprocessing.pdf_reader import extract_text_from_pdf
 from preprocessing.parser import parse_candidate_profile
 from analysis.education_analysis import analyze_education_profile
 from analysis.experience_analysis import analyze_experience
-from analysis.research_analysis import research_analysis
+from analysis.research_analysis import analyze_research_profile
+from analysis.topic_analysis import analyze_topic_variability
+from analysis.coauthor_analysis import analyze_coauthors
+from analysis.supervision_books_patents import analyze_supervision_books_patents
 from analysis.email_drafter import analyze_missing_and_draft_email, batch_draft_emails
 from analysis.summary_generator import generate_summary, generate_llm_summary
 
@@ -62,9 +65,25 @@ def process_single_cv(pdf_path: Path) -> dict:
     """Process a single CV and return full analysis."""
     text = extract_text_from_pdf(pdf_path)
     profile = parse_candidate_profile(text, use_llm=True)
+
     edu = analyze_education_profile(profile)
     exp = analyze_experience(profile)
-    res = research_analysis(profile)
+
+    res = analyze_research_profile(profile)
+
+    publications = []
+    if isinstance(res.get("publications_table"), pd.DataFrame):
+        publications = res["publications_table"].to_dict("records")
+    elif isinstance(profile.get("publications"), list):
+        publications = profile.get("publications", [])
+
+    topic_result = analyze_topic_variability(publications)
+
+    candidate_name = profile.get("personal_information", {}).get("name", "")
+    coauthor_result = analyze_coauthors(publications, candidate_name)
+
+    sbp_result = analyze_supervision_books_patents(profile)
+
     email_result = analyze_missing_and_draft_email(profile)
     summary = generate_summary(edu, exp, res, email_result["missing_info_analysis"])
 
@@ -75,6 +94,9 @@ def process_single_cv(pdf_path: Path) -> dict:
         "education": edu,
         "experience": exp,
         "research": res,
+        "topic_analysis": topic_result,
+        "coauthor_analysis": coauthor_result,
+        "supervision_books_patents": sbp_result,
         "email_result": email_result,
         "summary": summary,
     }
@@ -252,70 +274,114 @@ def render_research_tab(result):
     st.subheader("Research Profile Analysis")
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.markdown(f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Total Publications</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{res.get('total_publications', 0)}</span></div>", unsafe_allow_html=True)
-    c2.markdown(f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Journal Papers</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{res.get('journal_count', 0)}</span></div>", unsafe_allow_html=True)
-    c3.markdown(f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Conference Papers</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{res.get('conference_count', 0)}</span></div>", unsafe_allow_html=True)
-    c4.markdown(f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Dominant Theme</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{res.get('dominant_theme', 'N/A')}</span></div>", unsafe_allow_html=True)
+    c1.markdown(
+        f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Total Publications</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{res.get('total_publications', 0)}</span></div>",
+        unsafe_allow_html=True
+    )
+    c2.markdown(
+        f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Journal Papers</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{res.get('journal_count', 0)}</span></div>",
+        unsafe_allow_html=True
+    )
+    c3.markdown(
+        f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Conference Papers</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{res.get('conference_count', 0)}</span></div>",
+        unsafe_allow_html=True
+    )
+    c4.markdown(
+        f"<div style='margin-bottom: 15px;'><span style='font-size: 0.9rem; color: #a0a0a0;'>Research Score</span><br><span style='font-size: 1.6rem; font-weight: 600; line-height: 1.2;'>{res.get('research_score', 0)}/100</span></div>",
+        unsafe_allow_html=True
+    )
 
     # Publication table
-    if res.get("publication_table"):
+    publication_data = res.get("publications_table", res.get("publication_table"))
+
+    if isinstance(publication_data, pd.DataFrame):
+        if not publication_data.empty:
+            st.markdown("#### Publication Details")
+            st.dataframe(publication_data, use_container_width=True, hide_index=True)
+    elif publication_data:
         st.markdown("#### Publication Details")
-        df = pd.DataFrame(res["publication_table"])
+        df = pd.DataFrame(publication_data)
         st.dataframe(df, use_container_width=True, hide_index=True)
+    else:
+        st.info("No publication table available.")
 
-    col1, col2 = st.columns(2)
+    # Publications by type
+    by_type = {
+        "Journal": res.get("journal_count", 0),
+        "Conference": res.get("conference_count", 0),
+        "Unknown": max(
+            res.get("total_publications", 0)
+            - res.get("journal_count", 0)
+            - res.get("conference_count", 0),
+            0
+        )
+    }
 
-    # Publications by type (pie chart)
-    with col1:
-        by_type = res.get("publications_by_type", {})
-        if any(v > 0 for v in by_type.values()):
-            fig = px.pie(
-                names=list(by_type.keys()),
-                values=list(by_type.values()),
-                title="Publications by Type",
-                color_discrete_sequence=["#3498db", "#e74c3c", "#95a5a6"]
-            )
-            fig.update_layout(height=300)
-            st.plotly_chart(fig, use_container_width=True)
-
-    # Publications by year (bar chart)
-    with col2:
-        by_year = res.get("publications_by_year", {})
-        if by_year:
-            fig = px.bar(
-                x=list(by_year.keys()),
-                y=list(by_year.values()),
-                title="Publications by Year",
-                labels={"x": "Year", "y": "Count"},
-                color_discrete_sequence=["#2ecc71"]
-            )
-            fig.update_layout(height=300)
-            st.plotly_chart(fig, use_container_width=True)
-
-    # Authorship breakdown
-    st.markdown(f"**Authorship:** {res.get('authorship_summary', 'N/A')}")
-
-    # Research themes
-    themes = res.get("research_themes", [])
-    if themes:
-        st.markdown("#### Research Themes")
-        theme_df = pd.DataFrame(themes, columns=["Theme", "Papers"])
-        fig = px.bar(theme_df, x="Theme", y="Papers",
-                     title="Research Theme Distribution",
-                     color="Papers", color_continuous_scale="Blues")
+    if any(v > 0 for v in by_type.values()):
+        fig = px.pie(
+            names=list(by_type.keys()),
+            values=list(by_type.values()),
+            title="Publications by Type"
+        )
         fig.update_layout(height=300)
         st.plotly_chart(fig, use_container_width=True)
 
-    # Venue analysis
-    va = res.get("venue_analysis", {})
-    if va.get("avg_impact_factor"):
-        st.markdown(
-            f"**Avg Impact Factor:** {va['avg_impact_factor']} | "
-            f"**Max IF:** {va.get('max_impact_factor', 'N/A')} | "
-            f"**Papers with IF:** {va.get('papers_with_if', 0)}"
-        )
+    st.info(f"**Summary:** {res.get('summary', res.get('research_summary', 'N/A'))}")
 
-    st.info(f"**Summary:** {res.get('research_summary', 'N/A')}")
+    # Huma Milestone 3: Topic variability
+    topic = result.get("topic_analysis", {})
+    if topic:
+        st.markdown("#### Topic Variability Analysis")
+        st.markdown(f"**Dominant Topic:** {topic.get('dominant_topic', 'N/A')}")
+        st.markdown(f"**Diversity Label:** {topic.get('diversity_label', 'N/A')}")
+        st.markdown(f"**Diversity Score:** {topic.get('diversity_score', 0)}/100")
+
+        topic_table = topic.get("topic_table")
+        if isinstance(topic_table, pd.DataFrame) and not topic_table.empty:
+            st.dataframe(topic_table, use_container_width=True, hide_index=True)
+
+        st.caption(topic.get("summary", ""))
+
+    # Huma Milestone 3: Co-author analysis
+    coauthors = result.get("coauthor_analysis", {})
+    if coauthors:
+        st.markdown("#### Co-author Collaboration Analysis")
+        cc1, cc2, cc3 = st.columns(3)
+        cc1.metric("Unique Co-authors", coauthors.get("unique_coauthors", 0))
+        cc2.metric("Avg Authors/Paper", coauthors.get("average_authors_per_paper", 0))
+        cc3.metric("Collaboration Score", f"{coauthors.get('collaboration_score', 0)}/100")
+
+        coauthor_table = coauthors.get("frequent_coauthors_table")
+        if isinstance(coauthor_table, pd.DataFrame) and not coauthor_table.empty:
+            st.dataframe(coauthor_table, use_container_width=True, hide_index=True)
+
+        st.caption(coauthors.get("summary", ""))
+
+    # Huma Milestone 3: Supervision, books, and patents
+    sbp = result.get("supervision_books_patents", {})
+    if sbp:
+        st.markdown("#### Supervision, Books, and Patents Analysis")
+        st.metric("Supervision/Books/Patents Score", f"{sbp.get('score', 0)}/100")
+
+        supervision_table = sbp.get("supervision_table")
+        if isinstance(supervision_table, pd.DataFrame) and not supervision_table.empty:
+            st.markdown("**Supervision Records**")
+            st.dataframe(supervision_table, use_container_width=True, hide_index=True)
+
+        books_table = sbp.get("books_table")
+        if isinstance(books_table, pd.DataFrame) and not books_table.empty:
+            st.markdown("**Books / Book Chapters**")
+            st.dataframe(books_table, use_container_width=True, hide_index=True)
+
+        patents_table = sbp.get("patents_table")
+        if isinstance(patents_table, pd.DataFrame) and not patents_table.empty:
+            st.markdown("**Patents**")
+            st.dataframe(patents_table, use_container_width=True, hide_index=True)
+
+        if sbp.get("missing_info"):
+            st.warning("Missing/verification needed: " + "; ".join(sbp["missing_info"]))
+
+        st.caption(sbp.get("summary", ""))
 
 
 def render_email_tab(result):
