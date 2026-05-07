@@ -81,14 +81,15 @@ def parse_with_llm(raw_text: str) -> dict:
 def split_into_sections(lines):
     """Splits raw CV lines into named sections based on header keywords."""
     SECTION_MARKERS = {
-        "education":     ["education"],
-        "experience":    ["civil experience", "professional experience",
-                          "work experience", "employment history"],
-        "publications":  ["publications", "research publications"],
-        "skills":        ["skills", "technical skills", "competencies", "expertise"],
+        "education":     ["education", "academic background"],
+        "experience":    ["experience", "employment", "professional history"],
+        "publications":  ["publications", "research papers", "articles"],
+        "skills":        ["skills", "technical expertise", "competencies"],
+        "supervision":   ["supervision", "supervised students", "thesis supervision"],
+        "books":         ["books", "book chapters", "monographs"],
+        "patents":       ["patents", "intellectual property", "ipr"],
         "references":    ["references"],
-        "awards":        ["awards", "scholarships", "achievements"],
-        "qualifications":["professional qualification"],
+        "awards":        ["awards", "scholarships", "honors"],
     }
 
     sections = {"header": []}
@@ -98,7 +99,7 @@ def split_into_sections(lines):
         lower = line.lower().strip()
         matched = False
         for section, markers in SECTION_MARKERS.items():
-            if any(lower == m or lower.startswith(m) for m in markers):
+            if any(m in lower for m in markers):
                 current = section
                 matched = True
                 break
@@ -119,27 +120,43 @@ def extract_personal_information(header_lines, full_text):
     if pos_m:
         info["position_applied"] = pos_m.group(1).strip()
 
-    # Name
+    # Name extraction - improved for generalization
+    # 1. Look for explicit Name: label
     name_m = re.search(
-        r'\bName\s+([A-Za-z][A-Za-z\s\.]{2,60}?)\s+(?:Father|Guardian|Date/Place)',
+        r"\bName\s*[:\s]+\s*([A-Za-z][A-Za-z\s\.\'\-]{2,80}?)\s+(?:Father|Father's|Guardian|Date/Place)",
         full, re.I
     )
+    if not name_m:
+        name_m = re.search(
+            r"\bName\s*[:\s]+\s*([A-Za-z][A-Za-z\s\.\'\-]{2,80}?)(?:\n|\r|$)",
+            full, re.I
+        )
+
     if name_m:
         info["name"] = name_m.group(1).strip().title()
     else:
-        for i, line in enumerate(header_lines):
-            if "Candidate for the Post" in line:
-                for j in range(i + 1, min(i + 5, len(header_lines))):
-                    candidate = header_lines[j].strip()
-                    name_part = re.sub(r"Father.*", "", candidate, flags=re.I).strip()
-                    name_part = re.sub(r"^Name\s*", "", name_part, flags=re.I).strip()
-                    if name_part and re.match(r'^[A-Za-z\s\.]+$', name_part) and len(name_part) > 3:
-                        info["name"] = name_part.title()
-                        break
+        # 3. Heuristic: Check first 10 non-empty header lines for a candidate name.
+        ignore_keywords = [
+            "cv", "resume", "curriculum", "page", "post", "candidate",
+            "father", "guardian", "spouse", "occupation", "marital", "salary",
+            "email", "phone", "address", "nationality", "dob", "date/place",
+            "name of", "qualification", "course", "board", "university"
+        ]
+        for line in header_lines[:10]:
+            stripped = line.strip()
+            if not stripped or len(stripped) < 3:
+                continue
+            lower_line = stripped.lower()
+            if any(kw in lower_line for kw in ignore_keywords):
+                continue
+            if re.match(r'^[A-Z][A-Za-z\s\.\'\-]+$', stripped) and len(stripped.split()) <= 4:
+                info["name"] = stripped.title()
                 break
 
     # DOB
     dob_m = re.search(r'Date/Place of\s*Birth:\s*([\d\-A-Za-z]+)', full, re.I)
+    if not dob_m:
+        dob_m = re.search(r'DOB[:\s]+([\d\-\/A-Za-z]+)', full, re.I)
     if dob_m:
         info["dob"] = dob_m.group(1).strip()
 
@@ -156,6 +173,46 @@ def extract_personal_information(header_lines, full_text):
         info["phone"] = phone_m.group(0).strip()
 
     return info
+
+
+# Supervision (regex fallback)
+def extract_supervision(text):
+    found = []
+    # Look for patterns like "Supervised 5 MS students" or "PhD Supervision: 2"
+    ms_m = re.search(r'\b(supervised|supervision)\s+([0-9]+)\s+ms\b', text, re.I)
+    if ms_m:
+        found.append({"student_name": f"{ms_m.group(2)} students", "degree_level": "MS", "role": "main_supervisor"})
+    
+    phd_m = re.search(r'\b(supervised|supervision)\s+([0-9]+)\s+phd\b', text, re.I)
+    if phd_m:
+        found.append({"student_name": f"{phd_m.group(2)} students", "degree_level": "PhD", "role": "main_supervisor"})
+    
+    return found
+
+
+# Books (regex fallback)
+def extract_books(text):
+    found = []
+    # Look for ISBNs which are strong indicators of books
+    isbns = re.findall(r'ISBN[:\s-]*([0-9Xx\- ]{10,20})', text, re.I)
+    for isbn in isbns:
+        # Try to find the line containing this ISBN
+        for line in text.splitlines():
+            if isbn in line:
+                found.append({"title": line.strip(), "isbn": isbn.strip(), "authors": [], "publisher": "", "year": ""})
+                break
+    return found
+
+
+# Patents (regex fallback)
+def extract_patents(text):
+    found = []
+    # Look for "Patent" keyword followed by a number
+    patents = re.findall(r'patent\s*(?:no\.?|number)?[:\s]*([A-Za-z0-9\-\/]+)', text, re.I)
+    for p in patents:
+        if len(p) > 5: # Avoid false positives with small numbers
+            found.append({"title": f"Patent {p}", "patent_number": p, "year": "", "inventors": []})
+    return found
 
 
 # Education (regex fallback)
@@ -175,21 +232,37 @@ def extract_education(edu_lines):
         if not any(kw in lower for kw in DEGREE_KEYWORDS):
             continue
 
-        years = YEAR_RE.findall(stripped)
+        # Handle separator like |
+        degree_part = stripped
+        institution_part = ""
+        if '|' in stripped:
+            parts = stripped.split('|', 1)
+            degree_part = parts[0].strip()
+            institution_part = parts[1].strip()
+
+        years = YEAR_RE.findall(degree_part) if not institution_part else YEAR_RE.findall(institution_part)
         year = years[-1] if years else ""
 
-        grade_m = re.search(r'\b(\d{1,3}\.?\d{0,2})\s*(%|\/\s*\d+\.?\d*)?', stripped)
+        grade_m = re.search(r'\b(\d{1,3}\.?\d{0,2})\s*(%|\/\s*\d+\.?\d*)?', degree_part)
         grade = grade_m.group(0).strip() if grade_m else ""
 
-        after_year = ""
-        if year:
-            year_idx = stripped.rfind(year)
-            after_year = stripped[year_idx + len(year):].strip()
+        # Extract institution
+        institution = institution_part
+        if not institution:
+            after_year = ""
+            if year:
+                year_idx = degree_part.rfind(year)
+                after_year = degree_part[year_idx + len(year):].strip()
+            institution = after_year if after_year else ""
+            if not institution:
+                inst_m = re.search(r'(?:at|from|in)\s+([A-Za-z][A-Za-z\s\.,&\-]+)$', degree_part)
+                if inst_m:
+                    institution = inst_m.group(1).strip()
 
-        degree_raw = stripped
+        degree_raw = degree_part
         if grade:
-            grade_idx = stripped.find(grade)
-            degree_raw = stripped[:grade_idx].strip() if grade_idx > 5 else stripped
+            grade_idx = degree_part.find(grade)
+            degree_raw = degree_part[:grade_idx].strip() if grade_idx > 5 else degree_part
 
         degree = re.sub(r'\s{2,}.*', '', degree_raw).strip()
 
@@ -197,7 +270,7 @@ def extract_education(edu_lines):
             "degree": degree,
             "grade": grade,
             "year": year,
-            "institution": after_year if after_year else "",
+            "institution": institution,
             "specialization": "",
             "start_year": "",
             "end_year": year,
@@ -387,19 +460,64 @@ def parse_candidate_profile(text: str, use_llm: bool = True) -> dict:
     Returns a structured profile dict.
     """
 
+    lines = text.splitlines()
+    sections = split_into_sections(lines)
+    full_text = text
+
     # Try LLM-based parsing first
     if use_llm:
         llm_result = parse_with_llm(text)
         if llm_result:
+            # Ensure profile structure exists
+            defaults = {
+                "personal_information": {},
+                "education": [],
+                "experience": [],
+                "publications": [],
+                "skills": [],
+                "supervision": [],
+                "books": [],
+                "patents": [],
+                "certifications": [],
+                "awards": [],
+            }
+            for key, default in defaults.items():
+                if key not in llm_result or llm_result.get(key) is None:
+                    llm_result[key] = default
+
+            # Fill missing sections from regex fallback for better generalization
+            if not llm_result.get("personal_information"):
+                llm_result["personal_information"] = extract_personal_information(
+                    sections.get("header", []), full_text
+                )
+            else:
+                fallback_pi = extract_personal_information(
+                    sections.get("header", []), full_text
+                )
+                for key in ["name", "email", "phone", "position_applied", "dob"]:
+                    if not llm_result["personal_information"].get(key):
+                        llm_result["personal_information"][key] = fallback_pi.get(key, "")
+
+            if not llm_result.get("education"):
+                llm_result["education"] = extract_education(sections.get("education", []))
+            if not llm_result.get("experience"):
+                llm_result["experience"] = extract_experience(sections.get("experience", []))
+            if not llm_result.get("publications"):
+                llm_result["publications"] = extract_publications(sections.get("publications", []))
+            if not llm_result.get("skills"):
+                llm_result["skills"] = extract_skills(sections.get("skills", []), full_text)
+            if not llm_result.get("supervision"):
+                llm_result["supervision"] = extract_supervision(full_text)
+            if not llm_result.get("books"):
+                llm_result["books"] = extract_books(full_text)
+            if not llm_result.get("patents"):
+                llm_result["patents"] = extract_patents(full_text)
+
             llm_result["missing_information"] = detect_missing(llm_result)
             llm_result["_parsing_method"] = "llm"
             return llm_result
 
     # Fallback to regex-based parsing
-    lines = text.splitlines()
-    sections = split_into_sections(lines)
-    full_text = text
-
     profile = {
         "personal_information": extract_personal_information(
             sections.get("header", []), full_text
@@ -408,9 +526,9 @@ def parse_candidate_profile(text: str, use_llm: bool = True) -> dict:
         "experience":   extract_experience(sections.get("experience", [])),
         "publications": extract_publications(sections.get("publications", [])),
         "skills":       extract_skills(sections.get("skills", []), full_text),
-        "supervision":  [],
-        "books":        [],
-        "patents":      [],
+        "supervision":  extract_supervision(full_text),
+        "books":        extract_books(full_text),
+        "patents":      extract_patents(full_text),
         "certifications": [],
         "awards":       [],
     }

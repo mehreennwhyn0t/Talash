@@ -70,7 +70,7 @@ INPUT_DIR = Path("data/input_cvs")
 def process_single_cv(pdf_path: Path) -> dict:
     """Process a single CV and return full analysis."""
     text = extract_text_from_pdf(pdf_path)
-    profile = parse_candidate_profile(text, use_llm=True)
+    profile = parse_candidate_profile(text, use_llm=False)
 
     edu = analyze_education_profile(profile)
     exp = analyze_experience(profile)

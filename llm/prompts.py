@@ -88,6 +88,7 @@ IMPORTANT RULES:
 * Extract ALL education records from school (SSC/Matric/O-Levels) through PhD
 * Keep original grade/CGPA values exactly as written
 * For publications, try to separate the actual paper title from author names
+* Candidates may have "Father's Name" or "Guardian" listed; ensure you extract the Candidate's name, NOT the father's name.
 * If a field is not found, use empty string "" or empty list []
 * Do NOT invent or hallucinate information
 * Return ONLY valid JSON, no markdown

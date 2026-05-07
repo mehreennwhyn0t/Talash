@@ -31,11 +31,15 @@ UNIVERSITY_TIERS = {
     "aga khan university": {"tier": 1, "label": "Highly Ranked", "qs_range": "200-300"},
     "comsats": {"tier": 2, "label": "Well Ranked", "qs_range": "700-900"},
     "comsats university": {"tier": 2, "label": "Well Ranked", "qs_range": "700-900"},
+    "comsats university islamabad": {"tier": 2, "label": "Well Ranked", "qs_range": "700-900"},
+    "comsats university abbottabad campus": {"tier": 2, "label": "Well Ranked", "qs_range": "700-900"},
+    "comsats university attock campus": {"tier": 2, "label": "Well Ranked", "qs_range": "700-900"},
     "pieas": {"tier": 1, "label": "Highly Ranked", "qs_range": "500-700"},
     "giki": {"tier": 2, "label": "Well Ranked", "qs_range": "700-900"},
     "ist": {"tier": 2, "label": "Well Ranked", "qs_range": "Not Ranked"},
     "institute of space technology": {"tier": 2, "label": "Well Ranked", "qs_range": "Not Ranked"},
     "international islamic university": {"tier": 2, "label": "Well Ranked", "qs_range": "700-1000"},
+    "international islamic university islamabad": {"tier": 2, "label": "Well Ranked", "qs_range": "700-1000"},
     "uet lahore": {"tier": 2, "label": "Well Ranked", "qs_range": "600-800"},
     "ned university": {"tier": 2, "label": "Well Ranked", "qs_range": "700-900"},
     # Tier 3 - Recognized, not in major rankings
@@ -55,21 +59,70 @@ UNIVERSITY_TIERS = {
 }
 
 
+def normalize_institution_key(name: str) -> str:
+    """Normalize institution names for fuzzy matching."""
+    if not name:
+        return ""
+    cleaned = re.sub(r'[^a-z0-9\s]', ' ', name.lower())
+    cleaned = re.sub(r'\b(university|universities|institute|institutes|college|colleges|campus|campuses|center|centre|school|of|the|pakistan|islamabad|lahore|abbottabad|attock|sahab|city|national|federal|international|engineering|technology|science|studies)\b', ' ', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    return cleaned
+
+
 def lookup_institution_quality(institution_name: str) -> dict:
     """Look up institution quality from known rankings."""
     if not institution_name:
         return {"tier": None, "label": "Unknown", "qs_range": "Not Available"}
 
     name_lower = institution_name.lower().strip()
+    normalized_name = normalize_institution_key(name_lower)
+
+    # Special checks for known abbreviations
+    if "nust" in name_lower or "national university of sciences and technology" in name_lower:
+        return UNIVERSITY_TIERS["nust"]
+    if "lums" in name_lower or "lahore university of management sciences" in name_lower:
+        return UNIVERSITY_TIERS["lums"]
+    if "comsats" in name_lower:
+        return UNIVERSITY_TIERS["comsats"]
+    if "international islamic university" in name_lower:
+        return UNIVERSITY_TIERS["international islamic university"]
+    if "pieas" in name_lower:
+        return UNIVERSITY_TIERS["pieas"]
+    if "giki" in name_lower:
+        return UNIVERSITY_TIERS["giki"]
+    if "uet" in name_lower:
+        return UNIVERSITY_TIERS["uet lahore"]
+    if "ned" in name_lower:
+        return UNIVERSITY_TIERS["ned university"]
 
     # Direct match
     if name_lower in UNIVERSITY_TIERS:
         return UNIVERSITY_TIERS[name_lower]
 
-    # Partial match
+    # Exact normalized match
     for key, value in UNIVERSITY_TIERS.items():
-        if key in name_lower or name_lower in key:
+        if normalize_institution_key(key) == normalized_name:
             return value
+
+    # Partial match on normalized tokens
+    for key, value in UNIVERSITY_TIERS.items():
+        normalized_key = normalize_institution_key(key)
+        if normalized_key and (normalized_key in normalized_name or normalized_name in normalized_key):
+            return value
+
+    # Token overlap fallback
+    name_tokens = set(normalized_name.split())
+    best_match = None
+    best_overlap = 0
+    for key, value in UNIVERSITY_TIERS.items():
+        normalized_key = set(normalize_institution_key(key).split())
+        overlap = len(name_tokens & normalized_key)
+        if overlap > best_overlap:
+            best_overlap = overlap
+            best_match = value
+
+    if best_match and best_overlap >= 2:
+        return best_match
 
     return {"tier": None, "label": "Not in database", "qs_range": "Not Available"}
 
